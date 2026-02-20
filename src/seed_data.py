@@ -1,38 +1,31 @@
 import mysql.connector
+import random
+from db_connection import get_db_connection
 
-def seed_basic_data():
+def seed_inventory_data():
     try:
-        # 1. Connect to your database
-        conn = mysql.connector.connect(
-            host="127.0.0.1",
-            user="root",
-            password="Kushagra", # <--- UPDATE THIS
-            database="smart_retail_db"
-        )
+        # Use the connection from your db_connection file
+        conn = get_db_connection()
         cursor = conn.cursor()
-        print("🌱 Connection successful! Starting to add data...")
+        print("🌱 Connection successful! Adding Warehouse and Inventory...")
 
-        # 2. Add a Supplier (Every product needs a supplier first)
-        sql_supplier = "INSERT INTO Supplier (Name, Location, Type) VALUES (%s, %s, %s)"
-        supplier_data = ("Fresh Mart Wholesale", "Mumbai", "Main Distributor")
-        cursor.execute(sql_supplier, supplier_data)
+        # 1. Add a Warehouse
+        sql_warehouse = "INSERT INTO Warehouse (Location, Capacity) VALUES (%s, %s)"
+        cursor.execute(sql_warehouse, ("Central Hub - Mumbai", 10000))
+        warehouse_id = cursor.lastrowid 
+
+        # 2. Get Product IDs
+        cursor.execute("SELECT Product_ID FROM Product")
+        products = cursor.fetchall()
+
+        # 3. Add Inventory Records
+        sql_inventory = "INSERT INTO Inventory_Record (Product_ID, Warehouse_ID, Qty_On_Hand) VALUES (%s, %s, %s)"
         
-        # Get the ID of the supplier we just added
-        supplier_id = cursor.lastrowid
+        for p in products:
+            qty = random.randint(50, 200) 
+            cursor.execute(sql_inventory, (p[0], warehouse_id, qty))
 
-        # 3. Add some Products
-        sql_product = "INSERT INTO Product (Name, Category, Cost_Price, Selling_Price, Supplier_ID) VALUES (%s, %s, %s, %s, %s)"
-        products = [
-            ("Basmati Rice", "Grains", 60.00, 85.00, supplier_id),
-            ("Organic Milk", "Dairy", 40.00, 55.00, supplier_id),
-            ("Dark Chocolate", "Snacks", 90.00, 150.00, supplier_id)
-        ]
-        
-        cursor.executemany(sql_product, products)
-
-        # 4. Save the changes
-        conn.commit()
-        print(f"✅ Success! Added 1 Supplier and {cursor.rowcount} Products.")
+        print(f"✅ Success! Linked {len(products)} products to the Warehouse.")
 
     except Exception as e:
         print(f"❌ Error: {e}")
@@ -42,4 +35,4 @@ def seed_basic_data():
             conn.close()
 
 if __name__ == "__main__":
-    seed_basic_data()
+    seed_inventory_data()
