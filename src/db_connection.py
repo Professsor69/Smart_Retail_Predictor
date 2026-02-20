@@ -1,0 +1,10 @@
+import mysql.connector
+
+def get_db_connection():
+    return mysql.connector.connect(
+        host="127.0.0.1",        # Using the IP is safer than 'localhost'
+        user="root",
+        password="YOUR_PASSWORD", # Use your actual password
+        database="smart_retail_db",
+        autocommit=True          # This is the "Auto-Save" button
+    )
