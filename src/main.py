@@ -1,18 +1,37 @@
 import streamlit as st
 import time
 from db_connection import get_db_connection
+from streamlit_google_auth import Authenticate
 
 # 1. PAGE CONFIGURATION
 st.set_page_config(page_title="Smart Retail Predictor", page_icon="🛒", layout="wide")
 
-# 2. COMPACT CSS (Kills the scrollbar, fixes Welcome color)
+# 2. INITIALIZE GOOGLE AUTH
+try:
+    authenticator = Authenticate(
+        secret_credentials_path='google_credentials.json',
+        cookie_name='smart_retail_auth',
+        cookie_key='this_is_a_super_secret_key',
+        redirect_uri='http://localhost:8501/',
+    )
+    
+    # Catch the user if they successfully logged in via Google
+    authenticator.check_authentification()
+    if st.session_state.get('connected'):
+        st.session_state['authenticated'] = True
+        st.session_state['user_name'] = st.session_state.get('user_info', {}).get('name', 'Google User')
+        st.switch_page("pages/1_Dashboard.py")
+except Exception as e:
+    st.error(f"Google Auth Setup Error. Check if google_credentials.json is in the correct folder! Error: {e}")
+
+# 3. COMPACT CSS
 st.markdown("""
     <style>
     #MainMenu, footer, header, [data-testid="stSidebar"], [data-testid="collapsedControl"] {display: none !important;}
     
     .stApp {
         background: linear-gradient(135deg, #a8cbf3 0%, #ffffff 50%, #a8cbf3 100%);
-        overflow: hidden; /* Failsafe to completely disable the vertical scrollbar */
+        overflow: hidden; 
     }
     
     .block-container {
@@ -21,7 +40,6 @@ st.markdown("""
         max-width: 950px;
     }
 
-    /* Tighter padding inside the card to save vertical space */
     [data-testid="stVerticalBlockBorderWrapper"] {
         background-color: white !important;
         border: 1px solid #d3d3d3 !important; 
@@ -30,10 +48,8 @@ st.markdown("""
         padding: 20px !important; 
     }
     
-    /* Slightly scaled down titles to fit one screen */
     .main-title { text-align: center; font-size: 34px; font-weight: 800; margin-bottom: 10px; color: #1e1e1e;}
     
-    /* Visible Navy Blue color for Welcome! */
     .center-text { 
         text-align: center !important; 
         color: #1A365D !important; 
@@ -49,21 +65,10 @@ st.markdown("""
     .stTextInput > label > div > p { color: #333333 !important; font-size: 14px !important;}
     [data-baseweb="input"] > div { background-color: #f9f9f9 !important; border: 1px solid #eee !important; min-height: 40px !important;}
     [data-baseweb="input"] input { color: #000000 !important; padding: 8px !important;}
-
-    /* Social Icons styling with padding for spacing */
-    .social-icon {
-        display: block; 
-        margin-left: auto; 
-        margin-right: auto;
-        transition: transform 0.2s; 
-        cursor: pointer;
-        padding: 5px;
-    }
-    .social-icon:hover { transform: scale(1.1); }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. SESSION STATE
+# 4. SESSION STATE
 if 'auth_mode' not in st.session_state:
     st.session_state['auth_mode'] = 'login'
 
@@ -73,7 +78,7 @@ def switch_mode(mode):
 # --- THE TITLE ---
 st.markdown("<div class='main-title'>🛒 Smart Retail Predictor</div>", unsafe_allow_html=True)
 
-# 4. THE COMPACT FLOATING CARD
+# 5. THE COMPACT FLOATING CARD
 with st.container(border=True):
     left_col, right_col = st.columns([1.2, 1])
 
@@ -142,16 +147,14 @@ with st.container(border=True):
                             st.error("❌ Username may exist.")
                     else:
                         st.warning("Fill all fields.")
-
-        # --- UPDATED SOCIAL MEDIA SECTION WITH BETTER SPACING ---
-        st.markdown("<div class='or-text'>OR LOGIN WITH</div>", unsafe_allow_html=True)
+# --- UPDATED GOOGLE-ONLY SECTION ---
+        st.markdown("<div class='or-text'>OR CONTINUE WITH</div>", unsafe_allow_html=True)
         
-        # New column ratio to spread icons across the area
-        pad_left, fb_col, google_col, li_col, pad_right = st.columns([0.5, 1, 1, 1, 0.5])
+        # Widen the center column massively so the button has room to stretch horizontally
+        pad_left, google_col, pad_right = st.columns([0.2, 3, 0.2])
         
-        with fb_col:
-            st.markdown(f'<img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" class="social-icon" width="30">', unsafe_allow_html=True)
         with google_col:
-            st.markdown(f'<img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" class="social-icon" width="30">', unsafe_allow_html=True)
-        with li_col:
-            st.markdown(f'<img src="https://cdn-icons-png.flaticon.com/512/3536/3536505.png" class="social-icon" width="30">', unsafe_allow_html=True)
+            try:
+                authenticator.login()
+            except Exception:
+                st.error("Setup incomplete")
