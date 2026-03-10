@@ -209,3 +209,14 @@ __marimo__/
 # Project Secrets
 .env
 google_credentials.json
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Security Credentials - DO NOT UPLOAD
+google_credentials.json
+.env
+
+# Streamlit specific
+.streamlit/

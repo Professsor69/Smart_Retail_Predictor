@@ -20,17 +20,18 @@ try:
     if st.session_state.get('connected'):
         st.session_state['authenticated'] = True
         st.session_state['user_name'] = st.session_state.get('user_info', {}).get('name', 'Google User')
-        st.switch_page("pages/1_Dashboard.py")
+        st.switch_page("pages/1_📊_Dashboard.py")  
 except Exception as e:
     st.error(f"Google Auth Setup Error. Check if google_credentials.json is in the correct folder! Error: {e}")
 
-# 3. COMPACT CSS
+# 3. DEEP CHARCOAL THEME CSS
 st.markdown("""
     <style>
     #MainMenu, footer, header, [data-testid="stSidebar"], [data-testid="collapsedControl"] {display: none !important;}
     
+    /* Deep Charcoal/Indigo background for the main page */
     .stApp {
-        background: linear-gradient(135deg, #a8cbf3 0%, #ffffff 50%, #a8cbf3 100%);
+        background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%);
         overflow: hidden; 
     }
     
@@ -40,31 +41,35 @@ st.markdown("""
         max-width: 950px;
     }
 
+    /* Dark elevated card */
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: white !important;
-        border: 1px solid #d3d3d3 !important; 
+        background-color: #1f2937 !important;
+        border: 1px solid #374151 !important; 
         border-radius: 15px !important;
-        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.08) !important; 
+        box-shadow: 0px 8px 30px rgba(0, 0, 0, 0.4) !important; 
         padding: 20px !important; 
     }
     
-    .main-title { text-align: center; font-size: 34px; font-weight: 800; margin-bottom: 10px; color: #1e1e1e;}
+    /* Text styling for Dark Mode */
+    .main-title { text-align: center; font-size: 34px; font-weight: 800; margin-bottom: 10px; color: #f9fafb;}
     
+    /* Glowing blue accent for Welcome */
     .center-text { 
         text-align: center !important; 
-        color: #1A365D !important; 
+        color: #60a5fa !important; 
         font-size: 32px !important; 
         margin-top: 0 !important; 
         margin-bottom: 5px !important;
         display: block !important;
     }
     
-    .sub-text { text-align: center; color: #4b8bbe; font-size: 16px; margin-bottom: 15px; }
-    .or-text { text-align: center; color: #a0a0a0; font-size: 12px; margin: 15px 0px 10px 0px; }
+    .sub-text { text-align: center; color: #9ca3af; font-size: 16px; margin-bottom: 15px; }
+    .or-text { text-align: center; color: #6b7280; font-size: 12px; margin: 15px 0px 10px 0px; }
     
-    .stTextInput > label > div > p { color: #333333 !important; font-size: 14px !important;}
-    [data-baseweb="input"] > div { background-color: #f9f9f9 !important; border: 1px solid #eee !important; min-height: 40px !important;}
-    [data-baseweb="input"] input { color: #000000 !important; padding: 8px !important;}
+    /* Dark Input Fields */
+    .stTextInput > label > div > p { color: #d1d5db !important; font-size: 14px !important;}
+    [data-baseweb="input"] > div { background-color: #111827 !important; border: 1px solid #4b5563 !important; min-height: 40px !important;}
+    [data-baseweb="input"] input { color: #f9fafb !important; padding: 8px !important;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -83,7 +88,8 @@ with st.container(border=True):
     left_col, right_col = st.columns([1.2, 1])
 
     with left_col:
-        st.image("https://img.freepik.com/free-vector/mobile-login-concept-illustration_114360-83.jpg", use_container_width=True)
+        # Kept your original image!
+        st.image("https://img.freepik.com/free-vector/mobile-login-concept-illustration_114360-83.jpg", width="stretch")
 
     with right_col:
         st.markdown("<h1 class='center-text'>Welcome!</h1>", unsafe_allow_html=True)
@@ -95,11 +101,11 @@ with st.container(border=True):
             user_input = st.text_input("Username", placeholder="e.g. Kush")
             pass_input = st.text_input("Password", type="password", placeholder="••••••••")
             
-            st.markdown("<div style='text-align: right; font-size: 12px; color: #4b8bbe; margin-bottom: 10px; cursor: pointer;'>Forgot Password?</div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: right; font-size: 12px; color: #60a5fa; margin-bottom: 10px; cursor: pointer;'>Forgot Password?</div>", unsafe_allow_html=True)
             
             btn_col1, btn_col2 = st.columns(2)
             with btn_col1:
-                if st.button("SIGN IN", type="primary", use_container_width=True):
+                if st.button("SIGN IN", type="primary", width="stretch"):
                     with st.spinner("Authenticating..."):
                         time.sleep(0.5)
                         try:
@@ -112,13 +118,13 @@ with st.container(border=True):
                             if result:
                                 st.session_state['authenticated'] = True
                                 st.session_state['user_name'] = user_input 
-                                st.switch_page("pages/1_Dashboard.py")
+                                st.switch_page("pages/1_📊_Dashboard.py") 
                             else:
                                 st.error("❌ Invalid Credentials.")
                         except Exception as e:
                             st.error(f"Database Error: {e}")
             with btn_col2:
-                st.button("SIGN UP", on_click=switch_mode, args=('signup',), use_container_width=True)
+                st.button("SIGN UP", on_click=switch_mode, args=('signup',), width="stretch")
 
         # ------------------- SIGN UP MODE -------------------
         else:
@@ -129,9 +135,9 @@ with st.container(border=True):
             
             btn_col1, btn_col2 = st.columns(2)
             with btn_col1:
-                st.button("BACK TO LOGIN", on_click=switch_mode, args=('login',), use_container_width=True)
+                st.button("BACK TO LOGIN", on_click=switch_mode, args=('login',), width="stretch")
             with btn_col2:
-                if st.button("CREATE ACCOUNT", type="primary", use_container_width=True):
+                if st.button("CREATE ACCOUNT", type="primary", width="stretch"):
                     if new_user and new_pass:
                         try:
                             conn = get_db_connection()
@@ -147,10 +153,10 @@ with st.container(border=True):
                             st.error("❌ Username may exist.")
                     else:
                         st.warning("Fill all fields.")
-# --- UPDATED GOOGLE-ONLY SECTION ---
+                        
+        # --- UPDATED GOOGLE-ONLY SECTION ---
         st.markdown("<div class='or-text'>OR CONTINUE WITH</div>", unsafe_allow_html=True)
         
-        # Widen the center column massively so the button has room to stretch horizontally
         pad_left, google_col, pad_right = st.columns([0.2, 3, 0.2])
         
         with google_col:

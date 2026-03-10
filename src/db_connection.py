@@ -5,6 +5,6 @@ def get_db_connection():
         host="127.0.0.1",        # Using the IP is safer than 'localhost'
         user="root",
         password="Kushagra", # Use your actual password
-        database="smart_retail_db",
+        database="smart_retail",
         autocommit=True          # This is the "Auto-Save" button
     )
