@@ -104,40 +104,104 @@ st.subheader("📄 Aggregated Sales Report")
 st.write("This table is powered by your `User_Sales_Summary` MySQL View, grouping your raw data efficiently.")
 st.dataframe(df, use_container_width=True)  
 # --- ADD THIS TO THE VERY BOTTOM OF YOUR 1_📊_Dashboard.py FILE ---
+# --- REPLACE EVERYTHING FROM st.divider() TO THE END OF THE FILE WITH THIS ---
 
 st.divider()
 
 # 9. ADVANCED DATABASE DEMO SECTION (For your Professor)
-st.subheader("⚙️ Advanced Database Operations (Demo)")
-st.write("These tools demonstrate advanced SQL Stored Procedures executing live against your dataset.")
+st.subheader("⚙️ Review 2: Advanced Database Operations Demo")
+st.write("Click these buttons during your Viva to execute the complex SQL requirements live.")
 
-# Create two columns for our Demo buttons
-demo_col1, demo_col2 = st.columns(2)
-
-with demo_col1:
-    st.markdown("**(Review Req: Sets / UNION)**")
-    if st.button("🔍 Run Product Extremes", type="primary", use_container_width=True):
+# ROW 1: Sets and Cursors
+row1_col1, row1_col2 = st.columns(2)
+with row1_col1:
+    st.markdown("**(Criteria 1: Set Operations / UNION)**")
+    if st.button("🔍 Run Product Extremes", type="primary", width="stretch"):
         with st.spinner("Executing Stored Procedure..."):
             try:
                 conn = get_db_connection()
-                # FIXED: Explicitly calling from smart_retail_db
                 df_extremes = pd.read_sql("CALL smart_retail_db.Get_Product_Extremes(%s)", conn, params=(current_user,))
                 conn.close()
-                st.success("Successfully executed Set Operator (UNION) in MySQL!")
                 st.dataframe(df_extremes, use_container_width=True)
             except Exception as e:
-                st.error(f"Error running procedure: {e}")
+                st.error(f"Error: {e}")
 
-with demo_col2:
-    st.markdown("**(Review Req: Cursors)**")
-    if st.button("💎 Evaluate High-Value Sales (>$100)", type="primary", use_container_width=True):
+with row1_col2:
+    st.markdown("**(Criteria 3: Cursors)**")
+    if st.button("💎 Evaluate High-Value Sales", type="primary", width="stretch"):
         with st.spinner("Executing Row-by-Row Cursor..."):
             try:
                 conn = get_db_connection()
-                # FIXED: Explicitly calling from smart_retail_db
                 df_cursor = pd.read_sql("CALL smart_retail_db.Evaluate_High_Value_Sales(%s)", conn, params=(current_user,))
                 conn.close()
-                st.success("Successfully executed Cursor row-by-row logic in MySQL!")
                 st.dataframe(df_cursor, use_container_width=True)
             except Exception as e:
-                st.error(f"Error running procedure: {e}")
+                st.error(f"Error: {e}")
+
+# ROW 2: HAVING Clause and Subqueries
+row2_col1, row2_col2 = st.columns(2)
+with row2_col1:
+    st.markdown("**(Criteria 1: Aggregates with HAVING)**")
+    if st.button("📊 High Revenue Categories (>$200)", type="primary", width="stretch"):
+        with st.spinner("Filtering Aggregates..."):
+            try:
+                conn = get_db_connection()
+                df_having = pd.read_sql("CALL smart_retail_db.Get_High_Revenue_Categories(%s)", conn, params=(current_user,))
+                conn.close()
+                st.dataframe(df_having, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+with row2_col2:
+    st.markdown("**(Criteria 2: Nested Subqueries)**")
+    if st.button("📈 Above Average Transactions", type="primary", width="stretch"):
+        with st.spinner("Running Correlated Subquery..."):
+            try:
+                conn = get_db_connection()
+                df_sub = pd.read_sql("CALL smart_retail_db.Get_Above_Average_Sales(%s)", conn, params=(current_user,))
+                conn.close()
+                st.dataframe(df_sub, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+# ROW 3: LEFT JOIN, Exception Handling, and Functions
+row3_col1, row3_col2 = st.columns(2)
+with row3_col1:
+    st.markdown("**(Criteria 2: Multiple Joins / LEFT JOIN)**")
+    if st.button("👥 All Users Platform Status", type="primary", width="stretch"):
+        with st.spinner("Joining Tables..."):
+            try:
+                conn = get_db_connection()
+                df_join = pd.read_sql("CALL smart_retail_db.Get_All_Users_Sales_Status()", conn)
+                conn.close()
+                st.dataframe(df_join, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+with row3_col2:
+    st.markdown("**(Criteria 3: Functions & Exceptions)**")
+    if st.button("🛡️ Test Secure Insert & User Function", type="primary", width="stretch"):
+        with st.spinner("Testing Logic..."):
+            try:
+                # CONNECTION 1: Handle the secure insert
+                conn1 = get_db_connection()
+                df_ex = pd.read_sql("CALL smart_retail_db.Safe_Insert_Product('Demo Item', 'Misc', 10.00, 20.00)", conn1)
+                conn1.close() # Safely close it before it drops!
+                
+                # CONNECTION 2: Fresh connection for the UDF
+                conn2 = get_db_connection()
+                query = """
+                    SELECT %s AS Customer, 
+                    IFNULL(SUM(total_revenue), 0) AS 'Total Revenue', 
+                    smart_retail_db.Get_Loyalty_Tier(IFNULL(SUM(total_revenue), 0)) AS 'Loyalty Tier' 
+                    FROM Sales_Data s 
+                    INNER JOIN Customer c ON s.user_id = c.id 
+                    WHERE c.Name = %s
+                """
+                df_func = pd.read_sql(query, conn2, params=(current_user, current_user))
+                conn2.close()
+                
+                st.success(f"Transaction Status: {df_ex.iloc[0]['Status']}")
+                st.dataframe(df_func, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error: {e}")
