@@ -15,18 +15,17 @@ place to change credentials or retry logic.
 """
 
 import time
+import os
 import streamlit as st
 from db_connection import get_db_connection, get_cursor
 
-# ── Optional Google Auth ───────────────────────────────────────────────────────
-# If google_credentials.json is missing the import will still succeed;
-# Google login will just show an error in the UI instead of crashing.
-try:
-    from streamlit_google_auth import Authenticate as _GoogleAuth
-    _GOOGLE_AVAILABLE = True
-except ImportError:
-    _GOOGLE_AVAILABLE = False
+# Allow HTTP for local testing with Google Auth
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
 
+import json
+import urllib.parse
+import requests
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 COOKIE_NAME = "smart_retail_auth"
@@ -146,84 +145,115 @@ def logout():
     st.rerun()
 
 
-# ── Google OAuth ──────────────────────────────────────────────────────────────
-def setup_google_auth():
-    """
-    Initialise the Google OAuth authenticator.
-    Returns the authenticator object, or None if unavailable.
-    """
-    if not _GOOGLE_AVAILABLE:
-        return None
+# ── Custom Google OAuth ───────────────────────────────────────────────────────
+def get_google_config():
     try:
-        return _GoogleAuth(
-            secret_credentials_path=CREDENTIALS_PATH,
-            cookie_name=COOKIE_NAME,
-            cookie_key=COOKIE_KEY,
-            redirect_uri=REDIRECT_URI,
-        )
+        with open(CREDENTIALS_PATH, "r") as f:
+            return json.load(f).get("web", {})
     except Exception:
         return None
 
+def setup_google_auth():
+    return get_google_config()
 
-def check_google_login(authenticator, redirect_page: str = "pages/1_📊_Dashboard.py"):
+
+def check_google_login(config, redirect_page: str = "pages/1_📊_Dashboard.py"):
     """
     Called on every page load.
-    If Google OAuth completed, sync the user into our DB and session,
-    then redirect to redirect_page.
+    If 'code' is in url, exchange it and login.
     """
-    if authenticator is None:
+    if not config: return
+    
+    code = st.query_params.get("code")
+    if not code: return
+
+    # If already logged in, just clear the stale code param
+    if is_authenticated():
+        st.query_params.clear()
         return
 
     try:
-        authenticator.check_authentification()
-    except Exception:
-        return
+        # 1. Exchange code for token
+        res = requests.post(
+            config.get("token_uri", "https://oauth2.googleapis.com/token"),
+            data={
+                "client_id": config["client_id"],
+                "client_secret": config["client_secret"],
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": REDIRECT_URI,
+            }
+        )
+        res.raise_for_status()
+        
+        # 2. Fetch User Profile
+        user_res = requests.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {res.json()['access_token']}"}
+        )
+        user_res.raise_for_status()
+        user_info = user_res.json()
+        
+        g_name   = user_info.get("name", "Google User").strip()
+        g_email  = user_info.get("email", "")
 
-    if not st.session_state.get("connected"):
-        return
-
-    # Google user info
-    info     = st.session_state.get("user_info", {})
-    g_name   = info.get("name", "Google User").strip()
-    g_email  = info.get("email", "")
-
-    try:
+        # 3. Upsert User in DB
         conn   = get_db_connection()
         cursor = get_cursor(conn)
-
-        # Upsert: create the customer row if this Google user is new
-        cursor.execute("SELECT id, Name FROM Customer WHERE Name = %s OR Email = %s", (g_name, g_email))
+        # The Customer table does not have an Email column, so check by Name or Contact_Info
+        cursor.execute("SELECT id, Name FROM Customer WHERE Name = %s OR Contact_Info = %s", (g_name, g_email))
         row = cursor.fetchone()
 
         if row:
-            user_id  = row["id"]
-            username = row["Name"]
+            user_id, username = row["id"], row["Name"]
         else:
-            # Register Google user automatically (no password needed)
             cursor.execute(
-                "INSERT INTO Customer (Name, Contact_Info, Email) VALUES (%s, %s, %s)",
-                (g_name, "GOOGLE_OAUTH", g_email),
+                "INSERT INTO Customer (Name, Contact_Info) VALUES (%s, %s)",
+                (g_name, g_email),
             )
-            user_id  = cursor.lastrowid
-            username = g_name
+            user_id, username = cursor.lastrowid, g_name
 
         conn.close()
         _set_session(user_id=user_id, username=username)
+        
+        st.query_params.clear()
         st.switch_page(redirect_page)
 
     except Exception as e:
-        st.error(f"Google login error: {e}")
+        if "400 Client Error" in str(e):
+            st.query_params.clear() # Code was already consumed
+        else:
+            st.error(f"Google login error: {e}")
 
 
-def render_google_button(authenticator):
-    """Render the Google sign-in button. Call inside the login form."""
-    if authenticator is None:
+def render_google_button(config):
+    """Render a custom HTML Google Login button"""
+    if not config:
         st.caption("Google sign-in unavailable — `google_credentials.json` not found.")
         return
-    try:
-        authenticator.login()
-    except Exception as e:
-        st.error(f"Google auth error: {e}")
+
+    params = {
+        "client_id": config["client_id"],
+        "redirect_uri": REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "online",
+        "prompt": "select_account"
+    }
+    auth_url = f"{config.get('auth_uri', 'https://accounts.google.com/o/oauth2/auth')}?{urllib.parse.urlencode(params)}"
+    
+    st.markdown(f'''
+        <a href="{auth_url}" target="_self" style="
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+            padding: 0.6rem 1rem; background-color: #ffffff; color: #1e1e1e;
+            border-radius: 8px; text-decoration: none; font-weight: 600; width: 100%;
+            border: 1px solid #d1d5db; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: background-color 0.2s;
+        " onmouseover="this.style.backgroundColor='#f9fafb'" onmouseout="this.style.backgroundColor='#ffffff'">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg^{"{1}"}" width="20" height="20">
+            Sign in with Google
+        </a>
+    '''.replace("^{1}", ""), unsafe_allow_html=True)
+
 
 
 # ── Guard decorator / helper ──────────────────────────────────────────────────

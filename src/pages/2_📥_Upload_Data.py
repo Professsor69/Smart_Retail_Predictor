@@ -49,10 +49,10 @@ st.markdown("""
     [data-testid="stSidebarNav"] a[aria-current="page"] span,
     [data-testid="stSidebarNav"] a:hover span { color: var(--text-primary) !important; }
 
-    #MainMenu, footer { display: none !important; }
+    footer { display: none !important; }
 
     .block-container {
-        padding: 2rem 2.5rem 2rem 2.5rem !important;
+        padding: 4.5rem 2.5rem 2rem 2.5rem !important;
         max-width: 1200px !important;
     }
 

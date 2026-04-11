@@ -55,11 +55,11 @@ st.markdown("""
     }
 
     /* Hide default chrome */
-    #MainMenu, footer { display: none !important; }
+    footer { display: none !important; }
 
     /* ── MAIN CONTENT PADDING ── */
     .block-container {
-        padding: 2rem 2.5rem 2rem 2.5rem !important;
+        padding: 4.5rem 2.5rem 2rem 2.5rem !important;
         max-width: 1400px !important;
     }
 
