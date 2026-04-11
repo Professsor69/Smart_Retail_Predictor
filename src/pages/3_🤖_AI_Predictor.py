@@ -9,29 +9,209 @@ from db_connection import get_db_connection
 # 1. PAGE CONFIGURATION
 st.set_page_config(page_title="AI Sales Predictor", page_icon="🤖", layout="wide")
 
-# 2. DEEP CHARCOAL THEME CSS
+# 2. PREMIUM THEME
 st.markdown("""
     <style>
-    .stApp { background: linear-gradient(135deg, #111827 0%, #1f2937 100%); color: #f8fafc; }
-    [data-testid="stSidebar"] { background-color: #0f172a !important; border-right: 1px solid #334155; }
-    .main-header { color: #60a5fa; font-size: 36px; font-weight: 800; }
-    .metric-card { background-color: #1f2937; padding: 20px; border-radius: 15px; border: 1px solid #374151; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
-    .metric-value { font-size: 24px; font-weight: bold; color: #34d399; }
-    .metric-label { font-size: 14px; color: #9ca3af; text-transform: uppercase; }
-    </style>
-    """, unsafe_allow_html=True)
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
+    :root {
+        --bg-void: #03040a;
+        --surface-1: rgba(255,255,255,0.03);
+        --surface-2: rgba(255,255,255,0.06);
+        --border: rgba(255,255,255,0.08);
+        --border-bright: rgba(255,255,255,0.14);
+        --accent-primary: #7c6dfa;
+        --accent-secondary: #38e8c5;
+        --accent-gold: #f97316;
+        --text-primary: #f0f0f8;
+        --text-secondary: #8b8b9e;
+        --glow-purple: rgba(124,109,250,0.35);
+        --glow-teal: rgba(56,232,197,0.25);
+    }
+
+    html, body, .stApp {
+        background-color: var(--bg-void) !important;
+        background-image:
+            radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124,109,250,0.14) 0%, transparent 60%),
+            radial-gradient(ellipse 40% 30% at 90% 100%, rgba(56,232,197,0.07) 0%, transparent 60%),
+            url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.012'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        font-family: 'DM Sans', sans-serif !important;
+        color: var(--text-primary) !important;
+    }
+
+    [data-testid="stSidebar"] {
+        background: rgba(3,4,10,0.92) !important;
+        border-right: 1px solid var(--border-bright) !important;
+        backdrop-filter: blur(20px);
+    }
+    [data-testid="stSidebar"] * { color: var(--text-secondary) !important; font-family: 'DM Sans', sans-serif !important; }
+    [data-testid="stSidebarNav"] a[aria-current="page"] {
+        background: rgba(124,109,250,0.12) !important;
+        border-radius: 10px !important;
+    }
+    [data-testid="stSidebarNav"] a[aria-current="page"] span,
+    [data-testid="stSidebarNav"] a:hover span { color: var(--text-primary) !important; }
+
+    #MainMenu, footer { display: none !important; }
+
+    .block-container {
+        padding: 2rem 2.5rem 2rem 2.5rem !important;
+        max-width: 1200px !important;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .page-header-left { display: flex; align-items: center; gap: 14px; }
+    .page-icon {
+        width: 48px; height: 48px;
+        background: linear-gradient(135deg, #a78bfa, var(--accent-primary));
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px;
+        box-shadow: 0 4px 20px rgba(167,139,250,0.4);
+        flex-shrink: 0;
+    }
+    .page-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -0.8px;
+        margin: 0;
+    }
+    .page-subtitle { font-size: 13px; color: var(--text-secondary); margin: 2px 0 0 0; }
+    .user-badge {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--surface-2); border: 1px solid var(--border-bright);
+        border-radius: 40px; padding: 8px 16px; font-size: 13px; color: var(--text-secondary);
+    }
+    .user-badge strong { color: var(--text-primary); }
+
+    /* ── METRIC CARDS ── */
+    .metric-card {
+        background: var(--surface-1);
+        border: 1px solid var(--border-bright);
+        border-radius: 20px;
+        padding: 24px 20px;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+        opacity: 0.7;
+    }
+    .metric-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(124,109,250,0.1);
+    }
+    .metric-icon { font-size: 22px; margin-bottom: 12px; display: block; }
+    .metric-label {
+        font-size: 11px; font-weight: 500;
+        color: var(--text-secondary);
+        text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
+    }
+    .metric-value {
+        font-family: 'Syne', sans-serif;
+        font-size: 28px; font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -1px; line-height: 1;
+    }
+    .metric-value.accent-teal { color: var(--accent-secondary); }
+    .metric-value.accent-gold { color: var(--accent-gold); }
+
+    /* ── SELECTBOX ── */
+    [data-baseweb="select"] > div {
+        background: var(--surface-1) !important;
+        border: 1px solid var(--border-bright) !important;
+        border-radius: 12px !important;
+        color: var(--text-primary) !important;
+    }
+    [data-baseweb="select"] > div:hover { border-color: var(--accent-primary) !important; }
+    [data-baseweb="select"] span { color: var(--text-primary) !important; }
+
+    /* ── SECTION ── */
+    .section-label {
+        font-family: 'Syne', sans-serif;
+        font-size: 16px; font-weight: 700;
+        color: var(--text-primary); letter-spacing: -0.3px; margin-bottom: 4px;
+    }
+    .section-desc { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+
+    /* ── ARCHITECT NOTE ── */
+    .arch-note {
+        background: rgba(124,109,250,0.06);
+        border: 1px solid rgba(124,109,250,0.2);
+        border-radius: 14px;
+        padding: 16px 20px;
+        display: flex; gap: 12px; align-items: flex-start;
+        margin-top: 1rem;
+    }
+    .arch-note-icon { font-size: 18px; flex-shrink: 0; margin-top: 2px; }
+    .arch-note-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .arch-note-text strong { color: var(--text-primary); }
+
+    /* ── ALERTS ── */
+    [data-testid="stSuccess"] {
+        background: rgba(56,232,197,0.06) !important;
+        border: 1px solid rgba(56,232,197,0.3) !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stError"] {
+        background: rgba(249,112,96,0.06) !important;
+        border: 1px solid rgba(249,112,96,0.3) !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stInfo"] {
+        background: rgba(124,109,250,0.06) !important;
+        border: 1px solid rgba(124,109,250,0.25) !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stWarning"] {
+        background: rgba(251,191,36,0.06) !important;
+        border: 1px solid rgba(251,191,36,0.25) !important;
+        border-radius: 12px !important;
+    }
+
+    hr { border-color: var(--border) !important; margin: 1.5rem 0 !important; }
+    p, span, label, li { color: var(--text-secondary) !important; font-family: 'DM Sans', sans-serif !important; }
+    h1, h2, h3, h4 { font-family: 'Syne', sans-serif !important; color: var(--text-primary) !important; }
+    </style>
+""", unsafe_allow_html=True)
+
+# 3. SECURITY CHECK
 if not st.session_state.get('authenticated'):
     st.warning("🔒 Please log in to access the AI Predictor.")
     st.stop()
 
 current_user = st.session_state['user_name']
 
-st.markdown("<div class='main-header'>🤖 AI Demand Forecasting</div>", unsafe_allow_html=True)
-st.write("Leveraging Machine Learning to predict future sales trends and seasonality based on your historical data.")
-st.divider()
+# 4. PAGE HEADER
+st.markdown(f"""
+    <div class="page-header">
+        <div class="page-header-left">
+            <div class="page-icon">🤖</div>
+            <div>
+                <div class="page-title">AI Demand Forecasting</div>
+                <div class="page-subtitle">Machine learning predictions based on your historical sales data</div>
+            </div>
+        </div>
+        <div class="user-badge">👤 &nbsp;<strong>{current_user}</strong></div>
+    </div>
+""", unsafe_allow_html=True)
 
-# 3. FETCH HISTORICAL DATA
+# 5. FETCH HISTORICAL DATA
 @st.cache_data(ttl=10)
 def get_ml_data(username):
     conn = get_db_connection()
@@ -50,90 +230,128 @@ with st.spinner("Initializing AI Models..."):
     df = get_ml_data(current_user)
 
 if df.empty:
-    st.error("Not enough data to run predictions. Please upload data in the Data Ingestion hub.")
+    st.error("Not enough data to run predictions. Please upload data in the Data Ingestion Hub first.")
     st.stop()
 
-# Ensure dates are in datetime format
 df['sale_date'] = pd.to_datetime(df['sale_date'])
 
-# 4. PRODUCT SELECTION
-products = df['product_name'].unique()
-selected_product = st.selectbox("Select a Product to Forecast:", products)
+# 6. PRODUCT SELECTION
+st.markdown('<div class="section-label">🎯 Select a Product to Forecast</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-desc">Choose a product from your uploaded dataset to generate a 30-day ML prediction.</div>', unsafe_allow_html=True)
 
-# Filter data for the selected product
+products = df['product_name'].unique()
+selected_product = st.selectbox("Product", products, label_visibility="collapsed")
+
 prod_df = df[df['product_name'] == selected_product].groupby('sale_date')['quantity_sold'].sum().reset_index()
 
-# 5. MACHINE LEARNING LOGIC (Linear Regression Time-Series)
+st.markdown("<hr>", unsafe_allow_html=True)
+
+# 7. MACHINE LEARNING LOGIC
 if len(prod_df) < 2:
-    st.warning(f"⚠️ Need more historical data for '{selected_product}' to make an accurate prediction. Upload a larger dataset!")
+    st.warning(f"⚠️ Need more historical data for **{selected_product}** to make an accurate prediction. Upload a larger dataset!")
 else:
-    # Prepare data for Scikit-Learn
     prod_df['Days_Since_Start'] = (prod_df['sale_date'] - prod_df['sale_date'].min()).dt.days
-    
+
     X = prod_df[['Days_Since_Start']]
     y = prod_df['quantity_sold']
-    
-    # Train the Model
+
     model = LinearRegression()
     model.fit(X, y)
-    
-    # Predict the next 30 days
+
     last_date = prod_df['sale_date'].max()
     future_dates = [last_date + timedelta(days=i) for i in range(1, 31)]
     future_days_since = [(d - prod_df['sale_date'].min()).days for d in future_dates]
-    
+
     future_X = pd.DataFrame({'Days_Since_Start': future_days_since})
     predictions = model.predict(future_X)
-    
-    # Ensure no negative predictions (you can't sell negative items)
     predictions = [max(0, int(p)) for p in predictions]
-    
-    # Calculate Seasonality (Best Day of Week)
+
     df['Day_of_Week'] = df['sale_date'].dt.day_name()
     best_day = df[df['product_name'] == selected_product].groupby('Day_of_Week')['quantity_sold'].sum().idxmax()
-    
-    # Calculate Total Forecast
-    total_predicted = sum(predictions)
 
-    # 6. DISPLAY AI INSIGHTS (KPIs)
+    total_predicted = sum(predictions)
+    trend = "📈 Trending Up" if predictions[-1] > predictions[0] else "📉 Trending Down"
+
+    # 8. KPI CARDS
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(f"<div class='metric-card'><div class='metric-label'>30-Day Forecast</div><div class='metric-value'>{total_predicted} units</div></div>", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="metric-card">
+                <span class="metric-icon">📦</span>
+                <div class="metric-label">30-Day Forecast</div>
+                <div class="metric-value accent-teal">{total_predicted:,} units</div>
+            </div>
+        """, unsafe_allow_html=True)
     with col2:
-        st.markdown(f"<div class='metric-card'><div class='metric-label'>Peak Seasonality</div><div class='metric-value'>{best_day}s</div></div>", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="metric-card">
+                <span class="metric-icon">📅</span>
+                <div class="metric-label">Peak Seasonality</div>
+                <div class="metric-value" style="font-size:20px;">{best_day}s</div>
+            </div>
+        """, unsafe_allow_html=True)
     with col3:
-        trend = "📈 Trending Up" if predictions[-1] > predictions[0] else "📉 Trending Down"
-        st.markdown(f"<div class='metric-card'><div class='metric-label'>Overall Trend</div><div class='metric-value'>{trend}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="metric-card">
+                <span class="metric-icon">📊</span>
+                <div class="metric-label">Overall Trend</div>
+                <div class="metric-value accent-gold" style="font-size:18px;">{trend}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
     st.write("<br>", unsafe_allow_html=True)
 
-    # 7. INTERACTIVE FORECAST CHART
-    st.subheader(f"📊 30-Day Sales Trajectory for {selected_product}")
-    
+    # 9. FORECAST CHART
+    st.markdown(f'<div class="section-label">📈 30-Day Sales Trajectory — {selected_product}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-desc">Historical actuals (solid) vs. AI-generated forecast (dashed)</div>', unsafe_allow_html=True)
+
     fig = go.Figure()
-    
-    # Plot Historical Data
+
     fig.add_trace(go.Scatter(
-        x=prod_df['sale_date'], y=prod_df['quantity_sold'], 
-        mode='lines+markers', name='Historical Sales', line=dict(color='#60a5fa', width=3)
+        x=prod_df['sale_date'], y=prod_df['quantity_sold'],
+        mode='lines+markers', name='Historical Sales',
+        line=dict(color='#7c6dfa', width=3),
+        marker=dict(size=6, color='#7c6dfa', line=dict(color='rgba(124,109,250,0.3)', width=4)),
     ))
-    
-    # Plot AI Predictions
+
     fig.add_trace(go.Scatter(
-        x=future_dates, y=predictions, 
-        mode='lines+markers', name='AI Forecast', line=dict(color='#34d399', width=3, dash='dot')
+        x=future_dates, y=predictions,
+        mode='lines+markers', name='AI Forecast',
+        line=dict(color='#38e8c5', width=3, dash='dot'),
+        marker=dict(size=6, color='#38e8c5', line=dict(color='rgba(56,232,197,0.3)', width=4)),
+        fill='tozeroy',
+        fillcolor='rgba(56,232,197,0.04)',
     ))
-    
+
     fig.update_layout(
         template='plotly_dark',
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         xaxis_title="Date",
         yaxis_title="Quantity Sold",
-        hovermode="x unified"
+        hovermode="x unified",
+        font=dict(family='DM Sans', color='#8b8b9e'),
+        legend=dict(
+            orientation='h',
+            yanchor='bottom', y=1.02,
+            xanchor='right', x=1,
+            font=dict(color='#8b8b9e'),
+        ),
+        xaxis=dict(gridcolor='rgba(255,255,255,0.04)', linecolor='rgba(255,255,255,0.06)'),
+        yaxis=dict(gridcolor='rgba(255,255,255,0.04)', linecolor='rgba(255,255,255,0.06)'),
+        margin=dict(l=0, r=0, t=40, b=0),
     )
-    
+
     st.plotly_chart(fig, use_container_width=True)
 
-    # 8. THE DBMS CONNECTION (Why the Professor cares)
-    st.info("💡 **DBMS Architecture Note:** In a full enterprise environment, these forecasted values (Confidence Scores, Seasonality Index) would be written directly into the `Prediction_Model` SQL table to trigger automated warehouse restocking alerts via the `Inventory_Record` table.")
+    # 10. ARCHITECTURE NOTE
+    st.markdown("""
+        <div class="arch-note">
+            <div class="arch-note-icon">💡</div>
+            <div class="arch-note-text">
+                <strong>DBMS Architecture Note:</strong> In a full enterprise environment, these forecasted values 
+                (Confidence Scores, Seasonality Index) would be written directly into the <code>Prediction_Model</code> 
+                SQL table to trigger automated warehouse restocking alerts via the <code>Inventory_Record</code> table.
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
