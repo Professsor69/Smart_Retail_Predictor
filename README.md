@@ -2,15 +2,17 @@
 
 <div align="center">
   <img src="https://img.shields.io/badge/Python-3.9+-blue.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/Streamlit-FF4B4B.svg?style=for-the-badge&logo=Streamlit&logoColor=white" alt="Streamlit" />
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=FastAPI&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript" />
   <img src="https://img.shields.io/badge/MySQL-4479A1.svg?style=for-the-badge&logo=MySQL&logoColor=white" alt="MySQL" />
   <img src="https://img.shields.io/badge/scikit--learn-F7931E.svg?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="Scikit-Learn" />
-  <img src="https://img.shields.io/badge/Data%20Engineering-8A2BE2.svg?style=for-the-badge" alt="Data Engineering" />
+  <img src="https://img.shields.io/badge/Google_OAuth-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google OAuth" />
 </div>
 
 <br>
 
-> **Bridging the gap between raw transactional data and predictive intelligence.** > Smart Retail Predictor is a full-stack, AI-driven inventory management and sales forecasting platform. It seamlessly ingests raw Excel data, processes it through a heavily normalized MySQL database engine, and utilizes Machine Learning to generate 30-day demand forecasts—all visualized on a dark-themed, interactive dashboard.
+> **Bridging the gap between raw transactional data and predictive intelligence.**
+> Smart Retail Predictor is a full-stack, AI-driven inventory management and sales forecasting platform. It seamlessly ingests raw Excel data, processes it through a highly normalized MySQL database engine, and utilizes Machine Learning to generate 30-day demand forecasts—all visualized on a sleek, modern glassmorphism web application.
 
 ---
 
@@ -21,32 +23,39 @@
 * **Automated Data Pipelines:** Drag-and-drop file ingestion system that automatically cleanses, normalizes, and maps bulk CSV/Excel data to the relational backend.
 
 ### 🗄️ 2. Enterprise Database Engine (The Core)
-The backbone of the application is a **Fully Normalized (3NF) 12-Table MySQL Schema**. The system offloads heavy computational logic from the Python frontend directly to the database layer for maximum performance.
-* **Virtualization:** Employs pre-calculated **Views** (`User_Sales_Summary`) to feed the dashboard instantly.
-* **Procedural Logic (PL/SQL):** Utilizes **Row-by-Row Cursors** for complex transaction evaluation and **User-Defined Functions (UDFs)** for dynamic customer loyalty tier calculations.
-* **Deep Analytics:** Leverages **Correlated Subqueries**, **Set Operations (`UNION`)**, and **Advanced Aggregations (`HAVING`)** to generate instant executive reports (e.g., above-average sales tracking, product extremes).
+The backbone of the application is a **Fully Normalized (3NF) MySQL Schema**. The system offloads heavy computational logic directly to the database layer for maximum performance.
+* **Complex Query Execution:** Utilizes advanced SQL techniques including Correlated Subqueries, Set Operations (`UNION`), and Advanced Aggregations (`HAVING`) to generate instant reports.
+* **Transaction Integrity:** Strict error handling prevents bad data injection, with automated logging systems tracking bulk upload actions.
 
-### 🛡️ 3. Security & Transaction Integrity
-* **ACID Compliance:** Implements strict **Exception Handling** via `START TRANSACTION` and `ROLLBACK` protocols. If bad data is injected, the transaction is killed before corruption occurs.
-* **Automated Auditing:** Features an `AFTER INSERT` **Trigger** that acts as a silent security camera, logging every bulk upload action, user ID, and timestamp into an isolated `Audit_Log` table without requiring API calls.
-* **Cascading Deletes:** Strict `FOREIGN KEY` constraints ensure no orphaned records exist if users or suppliers are removed from the system.
+### 🌐 3. High-Performance Web Architecture
+Recently migrated from a monolithic Streamlit architecture to a modern, decoupled client-server model:
+* **FastAPI Backend:** Provides robust, asynchronous RESTful API endpoints for data processing and machine learning integration.
+* **Custom Glassmorphism Frontend:** A highly responsive, premium dark-themed UI built with pure HTML, CSS, and vanilla JavaScript.
+* **Google OAuth Integration:** Secure, seamless authentication flow allowing users to sign in with their Google accounts or standard credentials.
+
+---
+
+## 💻 Getting Started
+
+### Prerequisites
+* Python 3.9+
+* MySQL Server (running locally)
+
+### Quick Start
+We've included simple scripts to manage the application server seamlessly:
+
+1. **Start the Server:** Double-click `start_server.bat`
+2. **Access the App:** Open your browser and navigate to `http://localhost:8000`
+3. **Stop the Server:** Double-click `stop_server.bat` to instantly kill all related background processes.
 
 ---
 
 ## 📊 Interactive Dashboard Interface
 
-The Streamlit UI provides a unified command center for store managers:
+The custom web UI provides a unified command center for store managers:
 * **Real-Time KPIs:** Instant tracking of revenue, quantity sold, and user activity.
-* **Complex Query Execution:** A dedicated "Advanced Database Operations" control panel allows users to trigger Stored Procedures, execute subqueries, and test database constraints live with a single click.
-* **Visual Data Storytelling:** Interactive line charts and data frames mapping historical performance against AI-generated future predictions.
-
----
-
-## 🗺️ Database ER Diagram
-
-*(The system architecture maps transactional sales to predictive models via external factors and inventory constraints.)*
-
-**[📸 Replace this text: Drag and drop your final er_diagram.png image here]**
+* **Data Ingestion:** Secure drag-and-drop file uploads for continuous data integration.
+* **Visual Data Storytelling:** Interactive charts and data frames mapping historical performance against AI-generated future predictions.
 
 ---
 
@@ -54,8 +63,9 @@ The Streamlit UI provides a unified command center for store managers:
 
 | Category | Technologies Used |
 | :--- | :--- |
-| **Frontend UI** | Python, Streamlit, Pandas, Altair |
-| **Backend Database** | MySQL 8.0, Advanced PL/SQL |
-| **Machine Learning** | Scikit-learn, NumPy |
-| **Database Paradigms** | 3NF Normalization, Cursors, Triggers, UDFs, Subqueries, Joins |
+| **Frontend UI** | HTML5, CSS3 (Glassmorphism), Vanilla JavaScript, Chart.js |
+| **Backend API** | Python, FastAPI, Uvicorn |
+| **Database** | MySQL 8.0 |
+| **Machine Learning** | Scikit-learn, NumPy, Pandas |
+| **Authentication** | Google OAuth 2.0 |
 | **Version Control** | Git, GitHub |
