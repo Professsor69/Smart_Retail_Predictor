@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Ingestion Hub — Smart Retail Predictor</title>
+  <meta name="description" content="Upload, validate, and inject your retail sales datasets into the database.">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- ── NAVBAR ── -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="brand-icon">🛒</div>
+      <span class="brand-name">Smart Retail</span>
+    </div>
+    <div class="navbar-links">
+      <a href="/dashboard.html" class="nav-link" id="nav-dashboard">📊 Dashboard</a>
+      <a href="/upload.html"    class="nav-link active" id="nav-upload">📥 Upload Data</a>
+      <a href="/predictor.html" class="nav-link"        id="nav-predictor">🤖 AI Predictor</a>
+    </div>
+    <div class="navbar-right">
+      <div class="user-badge">👤 &nbsp;<strong id="nav-username">Loading…</strong></div>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- ── PAGE CONTENT ── -->
+  <main class="page-content" style="max-width:900px;">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-icon page-icon-teal">📥</div>
+        <div>
+          <div class="page-title">Data Ingestion Hub</div>
+          <div class="page-subtitle">Upload, validate, and inject your retail datasets</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert -->
+    <div id="main-alert" class="alert animate-fade-in" style="display:none;margin-bottom:20px;"></div>
+
+    <!-- Format info card -->
+    <div class="info-card">
+      <div class="info-card-icon">💡</div>
+      <div class="info-card-text">
+        <strong>Format Requirement:</strong> Your file must contain exactly these column headers:<br>
+        <code>Date</code> &nbsp; <code>Order_ID</code> &nbsp; <code>Product_Name</code> &nbsp;
+        <code>Category</code> &nbsp; <code>Quantity</code> &nbsp; <code>Unit_Price</code> &nbsp;
+        <code>Discount</code> &nbsp; <code>Region</code>
+      </div>
+    </div>
+
+    <!-- Download demo dataset -->
+    <div style="margin-bottom: 24px;">
+      <button class="btn btn-teal" onclick="downloadDemo()">📄 Download 30-Day Demo Dataset</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Upload zone -->
+    <div style="margin-bottom: 8px;">
+      <div class="section-label">📂 Upload Your Dataset</div>
+      <div class="section-desc">Drag and drop your CSV or Excel file below. The system will validate, clean, and inject it into your isolated database environment.</div>
+    </div>
+
+    <div class="drop-zone" id="drop-zone" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="onFileSelected(event)">
+      <div class="drop-icon">📁</div>
+      <div class="drop-title">Drop your file here, or click to browse</div>
+      <div class="drop-sub">Supports CSV and Excel (.xlsx, .xls)</div>
+    </div>
+
+    <!-- Preview section -->
+    <div id="preview-section" style="display:none; margin-top: 28px;">
+      <div class="divider"></div>
+
+      <div class="section-label">🔍 Data Preview</div>
+      <div class="section-desc" id="preview-desc">Showing the first 10 rows of your uploaded file.</div>
+      <div class="data-table-wrap" id="preview-table" style="margin-bottom: 20px;"></div>
+
+      <button class="btn btn-primary btn-lg" id="inject-btn" onclick="injectData()" style="width:100%;">
+        🚀 Inject to Database
+      </button>
+    </div>
+
+    <!-- Success state -->
+    <div id="success-state" style="display:none; margin-top:28px; text-align:center;">
+      <div style="font-size:56px; margin-bottom:12px;">🎉</div>
+      <div style="font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text-primary); margin-bottom:8px;">Data Injected Successfully!</div>
+      <div id="success-msg" style="font-size:14px; color:var(--text-secondary); margin-bottom:24px;"></div>
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <button class="btn btn-secondary" onclick="resetUpload()">Upload Another File</button>
+        <a href="/dashboard.html"><button class="btn btn-primary">📊 View Dashboard</button></a>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/upload.js"></script>
+</body>
+</html>

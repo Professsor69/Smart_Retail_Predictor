@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Dashboard — Smart Retail Predictor</title>
+  <meta name="description" content="Real-time retail analytics — KPIs, charts, and advanced SQL demos.">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ── NAVBAR ── -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="brand-icon">🛒</div>
+      <span class="brand-name">Smart Retail</span>
+    </div>
+    <div class="navbar-links">
+      <a href="/dashboard.html" class="nav-link active" id="nav-dashboard">📊 Dashboard</a>
+      <a href="/upload.html"    class="nav-link"        id="nav-upload">📥 Upload Data</a>
+      <a href="/predictor.html" class="nav-link"        id="nav-predictor">🤖 AI Predictor</a>
+    </div>
+    <div class="navbar-right">
+      <div class="user-badge">👤 &nbsp;<strong id="nav-username">Loading…</strong></div>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- ── PAGE CONTENT ── -->
+  <main class="page-content">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-icon page-icon-purple">📊</div>
+        <div>
+          <div class="page-title">Analytics Dashboard</div>
+          <div class="page-subtitle">Real-time overview of your retail performance</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading-state" style="text-align:center; padding: 80px 0;">
+      <div class="spinner" style="margin-bottom:16px;"></div>
+      <p style="color:var(--text-secondary);font-size:14px;">Fetching your data from the database…</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-state" style="display:none;">
+      <div class="empty-state">
+        <div class="empty-state-icon">⚠️</div>
+        <div class="empty-state-title">Failed to load dashboard</div>
+        <div class="empty-state-desc" id="error-msg">Please check your database connection.</div>
+        <button class="btn btn-primary" style="margin-top:20px;" onclick="loadDashboard()">Retry</button>
+      </div>
+    </div>
+
+    <!-- Empty state (no data) -->
+    <div id="empty-state" style="display:none;">
+      <div class="empty-state">
+        <div class="empty-state-icon">👋</div>
+        <div class="empty-state-title">No sales data yet</div>
+        <div class="empty-state-desc">Head over to "Upload Data" to ingest your first dataset!</div>
+        <a href="/upload.html"><button class="btn btn-primary" style="margin-top:20px;">📥 Upload Data</button></a>
+      </div>
+    </div>
+
+    <!-- Main dashboard (hidden until data loads) -->
+    <div id="dashboard-main" style="display:none;">
+
+      <!-- KPI Cards -->
+      <div class="grid-4" style="margin-bottom: 28px;" id="kpi-grid">
+        <div class="metric-card animate-fade-in" style="animation-delay:.05s">
+          <span class="metric-icon">💰</span>
+          <div class="metric-label">Total Revenue</div>
+          <div class="metric-value teal" id="kpi-revenue">—</div>
+        </div>
+        <div class="metric-card animate-fade-in" style="animation-delay:.1s">
+          <span class="metric-icon">📦</span>
+          <div class="metric-label">Items Sold</div>
+          <div class="metric-value" id="kpi-items">—</div>
+        </div>
+        <div class="metric-card animate-fade-in" style="animation-delay:.15s">
+          <span class="metric-icon">🏆</span>
+          <div class="metric-label">Top Category</div>
+          <div class="metric-value" id="kpi-category" style="font-size:20px;">—</div>
+        </div>
+        <div class="metric-card animate-fade-in" style="animation-delay:.2s">
+          <span class="metric-icon">🛍️</span>
+          <div class="metric-label">Unique Products</div>
+          <div class="metric-value purple" id="kpi-products">—</div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="grid-2" style="margin-bottom: 28px;">
+        <div>
+          <div class="section-label">🏆 Top Products by Revenue</div>
+          <div class="section-desc">Your five highest-performing SKUs</div>
+          <div class="chart-wrap"><canvas id="bar-chart" height="240"></canvas></div>
+        </div>
+        <div>
+          <div class="section-label">📦 Revenue by Category</div>
+          <div class="section-desc">Distribution across all product categories</div>
+          <div class="chart-wrap"><canvas id="pie-chart" height="240"></canvas></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Raw data table -->
+      <div style="margin-bottom: 32px;">
+        <div class="section-label">📄 Aggregated Sales Report</div>
+        <div class="section-desc">Powered by the <code style="background:var(--surface-2);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--accent-primary);">User_Sales_Summary</code> MySQL view — groups and aggregates your raw data in real-time.</div>
+        <div class="data-table-wrap" id="data-table-wrap"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Advanced DB Demo -->
+      <div style="margin-bottom: 12px;">
+        <div class="section-label">⚙️ Advanced Database Operations Demo</div>
+        <div class="section-desc">Click these buttons to execute the complex SQL requirements live.</div>
+      </div>
+
+      <div class="grid-2" style="gap:16px; margin-bottom:16px;">
+        <div>
+          <div class="demo-badge">Criteria 1</div>
+          <div class="demo-title">Set Operations / UNION</div>
+          <button class="btn btn-primary btn-full" id="btn-extremes" onclick="runDemo('product-extremes', 'btn-extremes', 'res-extremes')">
+            🔍 Run Product Extremes
+          </button>
+          <div id="res-extremes" style="margin-top:12px;"></div>
+        </div>
+        <div>
+          <div class="demo-badge">Criteria 3</div>
+          <div class="demo-title">Cursors — Row-by-row evaluation</div>
+          <button class="btn btn-primary btn-full" id="btn-cursor" onclick="runDemo('evaluate-high-value', 'btn-cursor', 'res-cursor')">
+            💎 Evaluate High-Value Sales
+          </button>
+          <div id="res-cursor" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="gap:16px; margin-bottom:16px;">
+        <div>
+          <div class="demo-badge">Criteria 1</div>
+          <div class="demo-title">Aggregates with HAVING clause</div>
+          <button class="btn btn-primary btn-full" id="btn-having" onclick="runDemo('high-revenue-categories', 'btn-having', 'res-having')">
+            📊 High Revenue Categories (&gt;$200)
+          </button>
+          <div id="res-having" style="margin-top:12px;"></div>
+        </div>
+        <div>
+          <div class="demo-badge">Criteria 2</div>
+          <div class="demo-title">Nested / Correlated Subqueries</div>
+          <button class="btn btn-primary btn-full" id="btn-subquery" onclick="runDemo('above-average-sales', 'btn-subquery', 'res-subquery')">
+            📈 Above Average Transactions
+          </button>
+          <div id="res-subquery" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="gap:16px;">
+        <div>
+          <div class="demo-badge">Criteria 2</div>
+          <div class="demo-title">Multiple Joins / LEFT JOIN</div>
+          <button class="btn btn-primary btn-full" id="btn-join" onclick="runDemo('all-users-status', 'btn-join', 'res-join')">
+            👥 All Users Platform Status
+          </button>
+          <div id="res-join" style="margin-top:12px;"></div>
+        </div>
+        <div>
+          <div class="demo-badge">Criteria 3</div>
+          <div class="demo-title">Functions &amp; Exception Handling</div>
+          <button class="btn btn-primary btn-full" id="btn-safe" onclick="runSafeInsert()">
+            🛡️ Test Secure Insert &amp; User Function
+          </button>
+          <div id="res-safe" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+    </div><!-- /dashboard-main -->
+  </main>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

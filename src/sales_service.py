@@ -22,7 +22,7 @@ def get_sales_for_user(username: str) -> pd.DataFrame:
     conn = get_db_connection()
     df = pd.read_sql(
         """
-        SELECT s.id, s.order_id, s.product_name, s.category,
+        SELECT s.sale_id as id, s.order_id, s.product_name, s.category,
                s.quantity_sold, s.unit_price, s.discount,
                s.region, s.sale_date, s.upload_batch
         FROM   Sales_Data s

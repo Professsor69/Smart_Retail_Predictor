@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Demand Forecasting — Smart Retail Predictor</title>
+  <meta name="description" content="30-day ML-powered sales demand forecasting for your retail products.">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ── NAVBAR ── -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="brand-icon">🛒</div>
+      <span class="brand-name">Smart Retail</span>
+    </div>
+    <div class="navbar-links">
+      <a href="/dashboard.html" class="nav-link">📊 Dashboard</a>
+      <a href="/upload.html"    class="nav-link">📥 Upload Data</a>
+      <a href="/predictor.html" class="nav-link active">🤖 AI Predictor</a>
+    </div>
+    <div class="navbar-right">
+      <div class="user-badge">👤 &nbsp;<strong id="nav-username">Loading…</strong></div>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- ── PAGE CONTENT ── -->
+  <main class="page-content">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-icon page-icon-violet">🤖</div>
+        <div>
+          <div class="page-title">AI Demand Forecasting</div>
+          <div class="page-subtitle">Machine learning trained from historical dataset modeling</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading products -->
+    <div id="loading-products" style="text-align:center; padding:60px 0;">
+      <div class="spinner" style="margin-bottom:16px;"></div>
+      <p style="color:var(--text-secondary);font-size:14px;">Initialising ML models and fetching products…</p>
+    </div>
+
+    <!-- No data state -->
+    <div id="no-data-state" style="display:none;">
+      <div class="empty-state">
+        <div class="empty-state-icon">📊</div>
+        <div class="empty-state-title">No sales data found</div>
+        <div class="empty-state-desc">Please upload sales data first before running predictions.</div>
+        <a href="/upload.html"><button class="btn btn-primary" style="margin-top:20px;">📥 Upload Data</button></a>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-state" style="display:none;">
+      <div class="empty-state">
+        <div class="empty-state-icon">⚠️</div>
+        <div class="empty-state-title">Error loading predictor</div>
+        <div class="empty-state-desc" id="error-msg"></div>
+        <button class="btn btn-primary" style="margin-top:20px;" onclick="loadProducts()">Retry</button>
+      </div>
+    </div>
+
+    <!-- Main predictor content -->
+    <div id="predictor-main" style="display:none;">
+
+      <!-- Product selector -->
+      <div style="margin-bottom: 28px;">
+        <div class="section-label">🎯 Select a Product to Forecast</div>
+        <div class="section-desc">Choose a product from your database. The AI will train on historical data and generate a 30-day demand forecast.</div>
+        <div style="max-width: 480px;">
+          <select class="input-field" id="product-select" onchange="runPrediction()" style="font-size:15px; height:50px; cursor:pointer;">
+            <option value="">— Select a product —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Prediction content (hidden until product selected) -->
+      <div id="prediction-content" style="display:none;">
+
+        <!-- Loading prediction -->
+        <div id="loading-prediction" style="display:none; text-align:center; padding:40px 0;">
+          <div class="spinner" style="margin-bottom:16px;"></div>
+          <p style="color:var(--text-secondary); font-size:14px;">Training model and generating 30-day forecast…</p>
+        </div>
+
+        <!-- Prediction error -->
+        <div id="prediction-error" class="alert alert-error" style="display:none; margin-bottom:20px;"></div>
+
+        <!-- Results -->
+        <div id="prediction-results" style="display:none;">
+
+          <!-- KPI cards -->
+          <div class="grid-3" style="margin-bottom: 28px;">
+            <div class="metric-card animate-fade-in" style="animation-delay:.05s">
+              <span class="metric-icon">📦</span>
+              <div class="metric-label">30-Day Forecast</div>
+              <div class="metric-value teal" id="kpi-forecast">—</div>
+            </div>
+            <div class="metric-card animate-fade-in" style="animation-delay:.1s">
+              <span class="metric-icon">🎓</span>
+              <div class="metric-label">Trained From</div>
+              <div class="metric-value" id="kpi-source" style="font-size:18px;">—</div>
+            </div>
+            <div class="metric-card animate-fade-in" style="animation-delay:.15s">
+              <span class="metric-icon">📊</span>
+              <div class="metric-label">Overall Trend</div>
+              <div class="metric-value gold" id="kpi-trend" style="font-size:18px;">—</div>
+            </div>
+          </div>
+
+          <!-- Model stats row -->
+          <div style="display:flex; gap:12px; margin-bottom:28px; flex-wrap:wrap;">
+            <div class="badge">📅 Best Day: <strong id="stat-bestday" style="color:var(--text-primary);margin-left:4px;">—</strong></div>
+            <div class="badge">📉 MAE: <strong id="stat-mae" style="color:var(--text-primary);margin-left:4px;">—</strong></div>
+            <div class="badge">🎯 R² Score: <strong id="stat-r2" style="color:var(--text-primary);margin-left:4px;">—</strong></div>
+          </div>
+
+          <!-- Forecast chart -->
+          <div style="margin-bottom: 28px;">
+            <div class="section-label" id="chart-label">📈 30-Day Sales Trajectory</div>
+            <div class="section-desc">Your SQL actuals (purple solid) vs. AI-generated forecast (teal dashed)</div>
+            <div class="chart-wrap"><canvas id="forecast-chart" height="280"></canvas></div>
+          </div>
+
+          <!-- Architecture note -->
+          <div class="info-card">
+            <div class="info-card-icon">💡</div>
+            <div class="info-card-text">
+              <strong>DBMS Architecture Note:</strong> These forecasted values (Confidence Scores, Seasonality Index) are
+              written directly into the <code>Prediction_Model</code> SQL table to demonstrate the full ML → Database pipeline.
+              In a production environment, this would trigger automated warehouse restocking alerts via the <code>Inventory_Record</code> table.
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /prediction-content -->
+    </div><!-- /predictor-main -->
+  </main>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/predictor.js"></script>
+</body>
+</html>

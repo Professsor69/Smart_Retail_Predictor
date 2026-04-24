@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Retail Predictor — Sign In</title>
+  <meta name="description" content="AI-powered retail demand forecasting. Log in to access your analytics dashboard.">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+
+    /* ── Auth card ── */
+    .auth-card {
+      width: min(920px, 100%);
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      border: 1px solid var(--border-bright);
+      box-shadow: 0 0 0 1px rgba(124,109,250,.08), 0 40px 100px rgba(0,0,0,.7), 0 0 80px rgba(124,109,250,.08);
+      backdrop-filter: blur(24px);
+      animation: fadeUp .5s ease;
+    }
+
+    /* ── Left panel ── */
+    .left-panel {
+      background: linear-gradient(160deg, rgba(124,109,250,.13) 0%, rgba(56,232,197,.07) 100%);
+      border-right: 1px solid var(--border);
+      padding: 52px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .brand-mark { display: flex; align-items: center; gap: 10px; margin-bottom: 44px; }
+    .brand-icon-lg {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-dark));
+      border-radius: 13px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 21px;
+      box-shadow: 0 4px 18px var(--glow-purple);
+    }
+    .brand-name-lg { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-primary); letter-spacing: -.3px; }
+
+    .panel-headline {
+      font-family: 'Syne', sans-serif;
+      font-size: 38px; font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -1.5px; line-height: 1.1;
+      margin-bottom: 18px;
+    }
+    .panel-headline span {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .panel-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.75; margin-bottom: 36px; }
+    .feature-list { display: flex; flex-direction: column; gap: 12px; }
+    .feature-item { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-secondary); }
+    .feature-dot {
+      width: 30px; height: 30px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-bright);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+
+    /* ── Right panel ── */
+    .right-panel { background: rgba(3,4,10,.6); padding: 52px 44px; }
+    .form-eyebrow {
+      font-size: 10px; font-weight: 500;
+      color: var(--accent-primary);
+      text-transform: uppercase; letter-spacing: 3px; margin-bottom: 8px;
+    }
+    .form-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px; font-weight: 800;
+      color: var(--text-primary); letter-spacing: -.8px; margin-bottom: 6px;
+    }
+    .form-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 28px; }
+
+    .forgot-row { text-align: right; font-size: 12px; color: var(--accent-primary); margin: -4px 0 20px; cursor: pointer; opacity: .8; }
+    .forgot-row:hover { opacity: 1; }
+
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+
+    /* Google divider + button */
+    .or-section { margin: 22px 0; }
+
+    /* Alert box */
+    #alert-box { display: none; }
+
+    @media (max-width: 680px) {
+      .auth-card { grid-template-columns: 1fr; }
+      .left-panel { display: none; }
+      .right-panel { padding: 36px 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    <!-- ── LEFT PANEL ── -->
+    <div class="left-panel">
+      <div>
+        <div class="brand-mark">
+          <div class="brand-icon-lg">🛒</div>
+          <span class="brand-name-lg">Smart Retail</span>
+        </div>
+        <div class="panel-headline">Your data,<br><span>intelligently</span><br>forecasted.</div>
+        <p class="panel-desc">Upload your sales data and let our AI-powered engine surface trends, predict demand, and deliver actionable insights — all in one place.</p>
+        <div class="feature-list">
+          <div class="feature-item"><div class="feature-dot">📊</div><span>Real-time analytics dashboard</span></div>
+          <div class="feature-item"><div class="feature-dot">🤖</div><span>30-day ML demand forecasting</span></div>
+          <div class="feature-item"><div class="feature-dot">⚡</div><span>Instant CSV &amp; Excel ingestion</span></div>
+          <div class="feature-item"><div class="feature-dot">🔒</div><span>Isolated per-user data environment</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT PANEL ── -->
+    <div class="right-panel">
+      <!-- Login Form -->
+      <div id="login-form">
+        <div class="form-eyebrow">Welcome back</div>
+        <div class="form-title">Sign in</div>
+        <p class="form-sub">Enter your credentials to access your workspace.</p>
+
+        <div id="alert-box" class="alert"></div>
+
+        <div class="input-group">
+          <label class="input-label" for="login-username">Username</label>
+          <input class="input-field" id="login-username" type="text" placeholder="e.g. Kush" autocomplete="username">
+        </div>
+        <div class="input-group">
+          <label class="input-label" for="login-password">Password</label>
+          <input class="input-field" id="login-password" type="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div class="forgot-row">Forgot password?</div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="login-btn" onclick="handleLogin()">Sign In</button>
+          <button class="btn btn-secondary" onclick="showRegister()">Create Account</button>
+        </div>
+
+        <div class="or-section">
+          <div class="or-divider"><div class="or-line"></div><span class="or-text">or continue with</span><div class="or-line"></div></div>
+          <button class="btn-google" id="google-btn" onclick="handleGoogleLogin()">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
+            Sign in with Google
+          </button>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-form" style="display:none;">
+        <div class="form-eyebrow">Get started</div>
+        <div class="form-title">Create account</div>
+        <p class="form-sub">Choose a username and password to get started.</p>
+
+        <div id="reg-alert-box" class="alert" style="display:none;"></div>
+
+        <div class="input-group">
+          <label class="input-label" for="reg-username">Username</label>
+          <input class="input-field" id="reg-username" type="text" placeholder="e.g. Kush" autocomplete="username">
+        </div>
+        <div class="input-group">
+          <label class="input-label" for="reg-password">Password</label>
+          <input class="input-field" id="reg-password" type="password" placeholder="••••••••" autocomplete="new-password">
+        </div>
+
+        <div style="margin-top: 8px;">
+          <div class="btn-row">
+            <button class="btn btn-secondary" onclick="showLogin()">← Back to Sign In</button>
+            <button class="btn btn-primary" id="reg-btn" onclick="handleRegister()">Create Account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // Check if already logged in
+    if (localStorage.getItem('auth_token')) {
+      window.location.href = '/dashboard.html';
+    }
+
+    // Show URL error param
+    const urlParams = new URLSearchParams(window.location.search);
+    const err = urlParams.get('error');
+    if (err) showAlert('login', 'Google sign-in failed. Please try again or use username/password.', 'error');
+
+    // Enter key support
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const regForm = document.getElementById('register-form');
+        if (regForm.style.display !== 'none') handleRegister();
+        else handleLogin();
+      }
+    });
+  </script>
+</body>
+</html>
