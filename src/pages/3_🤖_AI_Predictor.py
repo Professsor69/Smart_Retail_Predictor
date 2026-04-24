@@ -44,7 +44,7 @@ st.markdown("""
         border-right: 1px solid var(--border-bright) !important;
         backdrop-filter: blur(20px);
     }
-    [data-testid="stSidebar"] * { color: var(--text-secondary) !important; font-family: 'DM Sans', sans-serif !important; }
+    [data-testid="stSidebar"] * { color: var(--text-secondary) !important; }
     [data-testid="stSidebarNav"] a[aria-current="page"] {
         background: rgba(124,109,250,0.12) !important;
         border-radius: 10px !important;
@@ -185,8 +185,13 @@ st.markdown("""
     }
 
     hr { border-color: var(--border) !important; margin: 1.5rem 0 !important; }
-    p, span, label, li { color: var(--text-secondary) !important; font-family: 'DM Sans', sans-serif !important; }
+    p, label, li { color: var(--text-secondary) !important; font-family: 'DM Sans', sans-serif !important; }
     h1, h2, h3, h4 { font-family: 'Syne', sans-serif !important; color: var(--text-primary) !important; }
+    
+    /* Force Material Icons to retain their original font-family avoiding global override */
+    span[class*="material-symbols"], span[class*="icon"], i, .material-icons {
+        font-family: 'Material Symbols Rounded', 'Material Symbols Outlined', 'Material Icons' !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -204,16 +209,16 @@ st.markdown(f"""
             <div class="page-icon">🤖</div>
             <div>
                 <div class="page-title">AI Demand Forecasting</div>
-                <div class="page-subtitle">Machine learning predictions based on your historical sales data</div>
+                <div class="page-subtitle">Machine learning trained from historical dataset modeling</div>
             </div>
         </div>
-        <div class="user-badge">👤 &nbsp;<strong>{current_user}</strong></div>
+        <div class="user-badge">👤 &nbsp;<strong>{{current_user}}</strong></div>
     </div>
 """, unsafe_allow_html=True)
 
-# 5. FETCH HISTORICAL DATA
+# 5. FETCH DATA (USER & KAGGLE MODELING)
 @st.cache_data(ttl=10)
-def get_ml_data(username):
+def get_user_data(username):
     conn = get_db_connection()
     query = """
         SELECT s.sale_date, s.product_name, s.quantity_sold, s.category
@@ -226,48 +231,76 @@ def get_ml_data(username):
     conn.close()
     return df
 
-with st.spinner("Initializing AI Models..."):
-    df = get_ml_data(current_user)
+@st.cache_data(ttl=3600)
+def get_kaggle_model_data():
+    try:
+        df = pd.read_csv("Smart_Retail_Ready_Superstore.csv")
+        return df
+    except FileNotFoundError:
+        return pd.DataFrame()
 
-if df.empty:
+with st.spinner("Initializing ML Models and Connecting Data..."):
+    user_df = get_user_data(current_user)
+    kaggle_df = get_kaggle_model_data()
+
+if user_df.empty:
     st.error("Not enough data to run predictions. Please upload data in the Data Ingestion Hub first.")
     st.stop()
 
-df['sale_date'] = pd.to_datetime(df['sale_date'])
+user_df['sale_date'] = pd.to_datetime(user_df['sale_date'])
+
+if not kaggle_df.empty:
+    kaggle_df['Date'] = pd.to_datetime(kaggle_df['Date'])
 
 # 6. PRODUCT SELECTION
 st.markdown('<div class="section-label">🎯 Select a Product to Forecast</div>', unsafe_allow_html=True)
-st.markdown('<div class="section-desc">Choose a product from your uploaded dataset to generate a 30-day ML prediction.</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-desc">Choose a product from your DBMS dataset. The AI will use external data to train the model, predicting onto your SQL data.</div>', unsafe_allow_html=True)
 
-products = df['product_name'].unique()
+products = user_df['product_name'].unique()
 selected_product = st.selectbox("Product", products, label_visibility="collapsed")
 
-prod_df = df[df['product_name'] == selected_product].groupby('sale_date')['quantity_sold'].sum().reset_index()
+user_prod_df = user_df[user_df['product_name'] == selected_product].groupby('sale_date')['quantity_sold'].sum().reset_index()
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # 7. MACHINE LEARNING LOGIC
-if len(prod_df) < 2:
-    st.warning(f"⚠️ Need more historical data for **{selected_product}** to make an accurate prediction. Upload a larger dataset!")
+if len(user_prod_df) < 2:
+    st.warning(f"⚠️ Need more historical data in the database for **{selected_product}** to start predicting.")
 else:
-    prod_df['Days_Since_Start'] = (prod_df['sale_date'] - prod_df['sale_date'].min()).dt.days
+    # Look for Kaggle Training Data for the ML Model
+    if not kaggle_df.empty and selected_product in kaggle_df['Product_Name'].values:
+        train_df = kaggle_df[kaggle_df['Product_Name'] == selected_product].groupby('Date')['Quantity'].sum().reset_index()
+        train_date_col = 'Date'
+        train_qty_col = 'Quantity'
+        model_source = "Kaggle Dataset"
+    else:
+        # Fallback to User Data for training if product isn't in Kaggle Data
+        train_df = user_prod_df.copy()
+        train_date_col = 'sale_date'
+        train_qty_col = 'quantity_sold'
+        model_source = "User Database"
 
-    X = prod_df[['Days_Since_Start']]
-    y = prod_df['quantity_sold']
+    origin_date = train_df[train_date_col].min()
+    train_df['Days_Since_Start'] = (train_df[train_date_col] - origin_date).dt.days
 
+    X = train_df[['Days_Since_Start']]
+    y = train_df[train_qty_col]
+
+    # Train Model
     model = LinearRegression()
     model.fit(X, y)
 
-    last_date = prod_df['sale_date'].max()
-    future_dates = [last_date + timedelta(days=i) for i in range(1, 31)]
-    future_days_since = [(d - prod_df['sale_date'].min()).days for d in future_dates]
+    # Predict future based on User's max date
+    last_user_date = user_prod_df['sale_date'].max()
+    future_dates = [last_user_date + timedelta(days=i) for i in range(1, 31)]
+    future_days_since = [(d - origin_date).days for d in future_dates]
 
     future_X = pd.DataFrame({'Days_Since_Start': future_days_since})
     predictions = model.predict(future_X)
-    predictions = [max(0, int(p)) for p in predictions]
+    predictions = [max(0, int(round(p))) for p in predictions]
 
-    df['Day_of_Week'] = df['sale_date'].dt.day_name()
-    best_day = df[df['product_name'] == selected_product].groupby('Day_of_Week')['quantity_sold'].sum().idxmax()
+    user_df['Day_of_Week'] = user_df['sale_date'].dt.day_name()
+    best_day = user_df[user_df['product_name'] == selected_product].groupby('Day_of_Week')['quantity_sold'].sum().idxmax()
 
     total_predicted = sum(predictions)
     trend = "📈 Trending Up" if predictions[-1] > predictions[0] else "📉 Trending Down"
@@ -285,9 +318,9 @@ else:
     with col2:
         st.markdown(f"""
             <div class="metric-card">
-                <span class="metric-icon">📅</span>
-                <div class="metric-label">Peak Seasonality</div>
-                <div class="metric-value" style="font-size:20px;">{best_day}s</div>
+                <span class="metric-icon">🎓</span>
+                <div class="metric-label">Trained From</div>
+                <div class="metric-value" style="font-size:20px;">{model_source}</div>
             </div>
         """, unsafe_allow_html=True)
     with col3:
@@ -303,13 +336,13 @@ else:
 
     # 9. FORECAST CHART
     st.markdown(f'<div class="section-label">📈 30-Day Sales Trajectory — {selected_product}</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-desc">Historical actuals (solid) vs. AI-generated forecast (dashed)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-desc">Your SQL actuals (solid) vs. AI-generated forecast trained on external data (dashed)</div>', unsafe_allow_html=True)
 
     fig = go.Figure()
 
     fig.add_trace(go.Scatter(
-        x=prod_df['sale_date'], y=prod_df['quantity_sold'],
-        mode='lines+markers', name='Historical Sales',
+        x=user_prod_df['sale_date'], y=user_prod_df['quantity_sold'],
+        mode='lines+markers', name='Your DB Sales',
         line=dict(color='#7c6dfa', width=3),
         marker=dict(size=6, color='#7c6dfa', line=dict(color='rgba(124,109,250,0.3)', width=4)),
     ))

@@ -43,7 +43,7 @@ st.markdown("""
         border-right: 1px solid var(--border-bright) !important;
         backdrop-filter: blur(20px);
     }
-    [data-testid="stSidebar"] * { color: var(--text-secondary) !important; font-family: 'DM Sans', sans-serif !important; }
+    [data-testid="stSidebar"] * { color: var(--text-secondary) !important; }
     [data-testid="stSidebarNav"] a span { color: var(--text-secondary) !important; }
     [data-testid="stSidebarNav"] a:hover span,
     [data-testid="stSidebarNav"] a[aria-current="page"] span {
@@ -259,8 +259,13 @@ st.markdown("""
     hr { border-color: var(--border) !important; margin: 1.5rem 0 !important; }
 
     /* General text */
-    p, span, label, li { color: var(--text-secondary) !important; font-family: 'DM Sans', sans-serif !important; }
+    p, label, li { color: var(--text-secondary) !important; font-family: 'DM Sans', sans-serif !important; }
     h1, h2, h3, h4 { font-family: 'Syne', sans-serif !important; color: var(--text-primary) !important; }
+    
+    /* Force Material Icons to retain their original font-family avoiding global override */
+    span[class*="material-symbols"], span[class*="icon"], i, .material-icons {
+        font-family: 'Material Symbols Rounded', 'Material Symbols Outlined', 'Material Icons' !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
