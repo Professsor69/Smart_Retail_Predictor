@@ -136,7 +136,7 @@ async function injectData() {
     formData.append('file', selectedFile);
 
     const token = localStorage.getItem('auth_token');
-    const res = await fetch('http://localhost:8000/api/upload', {
+    const res = await fetch('/api/upload', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData,

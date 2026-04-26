@@ -1,6 +1,6 @@
 /* auth.js — Login, Register, Google OAuth logic */
 
-const API = 'http://localhost:8000';
+const API = '';
 
 /* ── Shared helpers ─────────────────────────────────────────── */
 function setLoading(btnId, loading) {
