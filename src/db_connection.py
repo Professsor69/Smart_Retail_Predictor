@@ -4,22 +4,36 @@ db_connection.py
 Central database connection module for Smart Retail Predictor.
 """
 
+import os
 import time
 import mysql.connector
 from mysql.connector import pooling, Error
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # ── Configuration ─────────────────────────────────────────────────────────────
+DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
 DB_CONFIG = {
-    "host":     "127.0.0.1",
-    "user":     "root",
-    "password": "Kushagra",    # ← Your MySQL root password
-    "database": "smart_retail",
+    "host":     DB_HOST,
+    "user":     os.environ.get("DB_USER", "root"),
+    "password": os.environ.get("DB_PASSWORD", "Kushagra"),    # ← Default local password
+    "database": os.environ.get("DB_NAME", "smart_retail_db"),
+    "port":     int(os.environ.get("DB_PORT", 3306)),
     "charset":  "utf8mb4",
     "collation": "utf8mb4_unicode_ci",
     "autocommit": True,
     "connection_timeout": 10,
     "use_pure": True,
 }
+
+# TiDB Cloud requires SSL. We disable strict CA verification for simplicity on Windows.
+if "tidbcloud" in DB_HOST.lower():
+    DB_CONFIG["ssl_disabled"] = False
+    DB_CONFIG["ssl_verify_cert"] = False
 
 # ── Simple connection ─────────────────────────────────────────────────────────
 def get_db_connection(retries: int = 3, delay: float = 1.0):

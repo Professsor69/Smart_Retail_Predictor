@@ -44,8 +44,12 @@ try:
 except Exception:
     pass
 
-REDIRECT_URI = "http://localhost:8000/api/auth/google/callback"
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+# Allow overriding redirect URI for production (e.g. https://your-app.onrender.com/api/auth/google/callback)
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8000")
+REDIRECT_URI = f"{BASE_URL}/api/auth/google/callback"
+
+if "localhost" in BASE_URL:
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 # ── Session store ─────────────────────────────────────────────────────────────
 sessions: dict[str, dict] = {}
@@ -318,22 +322,31 @@ def predict(product: str, session: dict = Depends(get_session)):
             .reset_index()
         )
 
-        if len(user_prod_df) < 2:
+        # Even 1 real data point is OK — the ML layer enriches sparse data
+        # with synthetic Kaggle-seeded history for a meaningful forecast.
+        if user_prod_df.empty:
             raise HTTPException(
                 400,
-                f"Not enough data for '{product}'. Need at least 2 data points across different dates.",
+                f"No data found for '{product}' in your database.",
             )
 
-        # Detect Kaggle training source
-        kaggle_path   = os.path.join(ROOT, "Smart_Retail_Ready_Superstore.csv")
-        model_source  = "User Database"
+        # Detect Kaggle training source and whether enrichment was applied
+        kaggle_path  = os.path.join(ROOT, "Smart_Retail_Ready_Superstore.csv")
+        in_kaggle    = False
         if os.path.exists(kaggle_path):
             try:
-                kdf = pd.read_csv(kaggle_path, usecols=["Product_Name"])
-                if product in kdf["Product_Name"].values:
-                    model_source = "Kaggle Dataset"
+                kdf      = pd.read_csv(kaggle_path, usecols=["Product_Name"])
+                in_kaggle = product in kdf["Product_Name"].values
             except Exception:
                 pass
+
+        needs_enrichment = len(user_prod_df) < ml_service._MIN_REAL_POINTS
+        if in_kaggle and needs_enrichment:
+            model_source = "Kaggle-Enriched Model"
+        elif in_kaggle:
+            model_source = "Kaggle Dataset"
+        else:
+            model_source = "User Database"
 
         result = ml_service.run_forecast(user_df, product)
         if result.errors:
@@ -345,9 +358,11 @@ def predict(product: str, session: dict = Depends(get_session)):
         except Exception:
             pass  # Table might not exist — that's OK
 
+        # result.historical_df already contains only real (non-synthetic) rows
+        hist_df    = result.historical_df
         hist_dates = [
             str(d.date()) if hasattr(d, "date") else str(d)
-            for d in user_prod_df["sale_date"]
+            for d in hist_df["sale_date"]
         ]
 
         return {
@@ -360,7 +375,7 @@ def predict(product: str, session: dict = Depends(get_session)):
             "mae":             result.mae,
             "historical": {
                 "dates": hist_dates,
-                "qty":   [int(x) for x in user_prod_df["quantity_sold"].tolist()],
+                "qty":   [int(x) for x in hist_df["quantity_sold"].tolist()],
             },
             "forecast": {
                 "dates": [str(d) for d in result.future_dates],
