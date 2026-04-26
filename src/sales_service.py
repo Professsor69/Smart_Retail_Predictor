@@ -47,9 +47,13 @@ def get_dashboard_summary(username: str) -> pd.DataFrame:
     conn = get_db_connection()
     df = pd.read_sql(
         """
-        SELECT product_name, category, total_quantity, total_revenue
-        FROM   User_Sales_Summary
-        WHERE  user_name = %s
+        SELECT s.product_name, s.category, 
+               SUM(s.quantity_sold) as total_quantity, 
+               SUM(s.total_revenue) as total_revenue
+        FROM Sales_Data s
+        INNER JOIN Customer c ON s.user_id = c.id
+        WHERE c.Name = %s
+        GROUP BY s.product_name, s.category
         """,
         conn,
         params=(username,),
@@ -199,7 +203,18 @@ def validate_and_prepare(df: pd.DataFrame) -> tuple[list[dict], list]:
 def call_product_extremes(username: str) -> pd.DataFrame:
     """UNION — highest & lowest revenue product."""
     conn = get_db_connection()
-    df   = pd.read_sql("CALL Get_Product_Extremes(%s)", conn, params=(username,))
+    df = pd.read_sql(
+        """
+        (SELECT '⭐ Top Performer' AS Performance_Category, s.product_name, SUM(s.total_revenue) AS Total_Generated
+         FROM Sales_Data s INNER JOIN Customer c ON s.user_id = c.id WHERE c.Name = %s
+         GROUP BY s.product_name ORDER BY Total_Generated DESC LIMIT 1)
+        UNION
+        (SELECT '⚠️ Lowest Performer' AS Performance_Category, s.product_name, SUM(s.total_revenue) AS Total_Generated
+         FROM Sales_Data s INNER JOIN Customer c ON s.user_id = c.id WHERE c.Name = %s
+         GROUP BY s.product_name ORDER BY Total_Generated ASC LIMIT 1)
+        """,
+        conn, params=(username, username)
+    )
     conn.close()
     return df
 
@@ -207,7 +222,14 @@ def call_product_extremes(username: str) -> pd.DataFrame:
 def call_high_revenue_categories(username: str) -> pd.DataFrame:
     """HAVING — categories with revenue > $200."""
     conn = get_db_connection()
-    df   = pd.read_sql("CALL Get_High_Revenue_Categories(%s)", conn, params=(username,))
+    df = pd.read_sql(
+        """
+        SELECT s.category AS 'Product Category', SUM(s.quantity_sold) AS 'Total Items Sold', SUM(s.total_revenue) AS 'Total Category Revenue'
+        FROM Sales_Data s INNER JOIN Customer c ON s.user_id = c.id WHERE c.Name = %s
+        GROUP BY s.category HAVING SUM(s.total_revenue) > 200 ORDER BY `Total Category Revenue` DESC
+        """,
+        conn, params=(username,)
+    )
     conn.close()
     return df
 
@@ -215,7 +237,15 @@ def call_high_revenue_categories(username: str) -> pd.DataFrame:
 def call_above_average_sales(username: str) -> pd.DataFrame:
     """Correlated subquery — above-average individual transactions."""
     conn = get_db_connection()
-    df   = pd.read_sql("CALL Get_Above_Average_Sales(%s)", conn, params=(username,))
+    df = pd.read_sql(
+        """
+        SELECT s.order_id AS 'Order ID', s.product_name AS 'Product', s.total_revenue AS 'Revenue', s.sale_date AS 'Date'
+        FROM Sales_Data s INNER JOIN Customer c ON s.user_id = c.id WHERE c.Name = %s
+        AND s.total_revenue > (SELECT AVG(s2.total_revenue) FROM Sales_Data s2 WHERE s2.user_id = c.id)
+        ORDER BY s.total_revenue DESC
+        """,
+        conn, params=(username,)
+    )
     conn.close()
     return df
 
@@ -223,7 +253,13 @@ def call_above_average_sales(username: str) -> pd.DataFrame:
 def call_all_users_status() -> pd.DataFrame:
     """LEFT JOIN — all users with their sales status."""
     conn = get_db_connection()
-    df   = pd.read_sql("CALL Get_All_Users_Sales_Status()", conn)
+    df = pd.read_sql(
+        """
+        SELECT c.Name AS 'Customer Name', COUNT(s.sale_id) AS 'Total Transactions', IFNULL(SUM(s.total_revenue), 0) AS 'Total Platform Revenue'
+        FROM Customer c LEFT JOIN Sales_Data s ON c.id = s.user_id GROUP BY c.id, c.Name
+        """,
+        conn
+    )
     conn.close()
     return df
 
@@ -231,7 +267,15 @@ def call_all_users_status() -> pd.DataFrame:
 def call_evaluate_high_value(username: str) -> pd.DataFrame:
     """Cursor — row-by-row sale tier evaluation."""
     conn = get_db_connection()
-    df   = pd.read_sql("CALL Evaluate_High_Value_Sales(%s)", conn, params=(username,))
+    df = pd.read_sql(
+        """
+        SELECT c.Name AS 'User', COUNT(s.sale_id) AS 'Total High-Value Transactions (>$100)'
+        FROM Sales_Data s INNER JOIN Customer c ON s.user_id = c.id
+        WHERE c.Name = %s AND s.total_revenue >= 100.00
+        GROUP BY c.Name
+        """,
+        conn, params=(username,)
+    )
     conn.close()
     return df
 
@@ -244,12 +288,19 @@ def call_safe_insert_product(name: str, category: str,
     Uses two connections because mysql-connector drops the result set
     on the same connection after a stored procedure with multiple result sets.
     """
-    conn   = get_db_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("CALL Safe_Insert_Product(%s, %s, %s, %s)", (name, category, cost, price))
-    result = cursor.fetchone()
-    conn.close()
-    return result[0] if result else "No status returned."
+    try:
+        cursor.execute("INSERT INTO Product (Name, Category, Cost_Price, Selling_Price, Supplier_ID) VALUES (%s, %s, %s, %s, NULL)", (name, category, cost, price))
+        conn.commit()
+        status = "Transaction Successful: Product Added"
+    except Exception as e:
+        conn.rollback()
+        status = f"Transaction Failed: {e}"
+    finally:
+        cursor.close()
+        conn.close()
+    return status
 
 
 def get_loyalty_tier(username: str) -> pd.DataFrame:
@@ -258,16 +309,18 @@ def get_loyalty_tier(username: str) -> pd.DataFrame:
     Returns a single-row DataFrame: Customer | Total Revenue | Loyalty Tier
     """
     conn = get_db_connection()
-    df   = pd.read_sql(
+    df = pd.read_sql(
         """
-        SELECT %s AS Customer,
-               IFNULL(SUM(total_revenue), 0)                         AS `Total Revenue`,
-               Get_Loyalty_Tier(IFNULL(SUM(total_revenue), 0))       AS `Loyalty Tier`
-        FROM   User_Sales_Summary
-        WHERE  user_name = %s
+        SELECT c.Name AS Customer, IFNULL(SUM(s.total_revenue), 0) AS `Total Revenue`,
+               CASE 
+                   WHEN IFNULL(SUM(s.total_revenue), 0) >= 5000 THEN 'Platinum'
+                   WHEN IFNULL(SUM(s.total_revenue), 0) >= 1000 THEN 'Gold'
+                   ELSE 'Silver'
+               END AS `Loyalty Tier`
+        FROM Customer c LEFT JOIN Sales_Data s ON c.id = s.user_id
+        WHERE c.Name = %s GROUP BY c.id, c.Name
         """,
-        conn,
-        params=(username, username),
+        conn, params=(username,)
     )
     conn.close()
     return df
