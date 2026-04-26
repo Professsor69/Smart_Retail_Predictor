@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics import r2_score, mean_absolute_error
@@ -219,7 +219,7 @@ def run_forecast(df: pd.DataFrame, product_name: str) -> ForecastResult:
     y = enriched_df["quantity_sold"].values
 
     # ── 3. Train ──────────────────────────────────────────────────────────────
-    model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
+    model = LinearRegression()
     model.fit(X, y)
 
     # In-sample metrics (computed only on non-synthetic rows for honest reporting)
