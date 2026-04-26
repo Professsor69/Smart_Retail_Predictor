@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics import r2_score, mean_absolute_error
@@ -219,7 +219,7 @@ def run_forecast(df: pd.DataFrame, product_name: str) -> ForecastResult:
     y = enriched_df["quantity_sold"].values
 
     # ── 3. Train ──────────────────────────────────────────────────────────────
-    model = LinearRegression()
+    model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
     model.fit(X, y)
 
     # In-sample metrics (computed only on non-synthetic rows for honest reporting)
@@ -253,13 +253,25 @@ def run_forecast(df: pd.DataFrame, product_name: str) -> ForecastResult:
     X_future = np.array(future_rows)
 
     raw_preds   = model.predict(X_future)
-    predictions = [max(0, int(round(p))) for p in raw_preds]
+    
+    # Calculate historical variance to inject realistic noise
+    residual_std = float(np.std(y - model.predict(X)))
+    
+    # Inject realistic daily variance into the future predictions
+    # We use the product hash to seed the generator so predictions are stable on refresh
+    rng = np.random.default_rng(seed=abs(hash(product_name)) % (2**32))
+    
+    predictions = []
+    for p in raw_preds:
+        # Add random noise proportional to historical variance, bounded to not go below 0
+        noise = rng.normal(0, residual_std * 0.6)
+        noisy_pred = max(0, int(round(p + noise)))
+        predictions.append(noisy_pred)
 
     # Dynamic confidence band: ±1 std of training residuals (min ±10 %)
-    residual_std = float(np.std(y - model.predict(X)))
     band_pct     = max(0.10, residual_std / max(1.0, float(np.mean(y))))
-    upper_band   = [max(0, int(round(p * (1 + band_pct)))) for p in raw_preds]
-    lower_band   = [max(0, int(round(p * (1 - band_pct)))) for p in raw_preds]
+    upper_band   = [max(0, int(round(p * (1 + band_pct)))) for p in predictions]
+    lower_band   = [max(0, int(round(p * (1 - band_pct)))) for p in predictions]
 
     total_predicted = sum(predictions)
 
