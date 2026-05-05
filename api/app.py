@@ -7,7 +7,6 @@ Key fixes in this version:
   - Demo endpoints use raw SQL (no stored procedures required)
   - Prediction_Model save is completely optional (skipped if table absent)
   - Sales query uses correct column alias (sale_id → id)
-  - Google OAuth redirect URI aligned with google_credentials.json
 """
 
 import sys
