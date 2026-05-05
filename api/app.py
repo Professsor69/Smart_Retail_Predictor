@@ -35,21 +35,7 @@ import sales_service
 import ml as ml_service
 from db_connection import get_db_connection, get_cursor
 
-# ── Google OAuth ──────────────────────────────────────────────────────────────
-GOOGLE_CREDENTIALS_PATH = os.path.join(ROOT, "google_credentials.json")
-GOOGLE_CONFIG = None
-try:
-    with open(GOOGLE_CREDENTIALS_PATH) as f:
-        GOOGLE_CONFIG = json.load(f).get("web", {})
-except Exception:
-    pass
 
-# Allow overriding redirect URI for production (e.g. https://your-app.onrender.com/api/auth/google/callback)
-BASE_URL = os.environ.get("BASE_URL", "http://localhost:8000")
-REDIRECT_URI = f"{BASE_URL}/api/auth/google/callback"
-
-if "localhost" in BASE_URL:
-    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 # ── Session store ─────────────────────────────────────────────────────────────
 sessions: dict[str, dict] = {}
@@ -169,97 +155,7 @@ def logout(
     return {"success": True}
 
 
-@app.get("/api/auth/google/url")
-def google_auth_url():
-    if not GOOGLE_CONFIG:
-        raise HTTPException(503, "Google sign-in unavailable — credentials not configured.")
-    params = {
-        "client_id": GOOGLE_CONFIG["client_id"],
-        "redirect_uri": REDIRECT_URI,
-        "response_type": "code",
-        "scope": "openid email profile",
-        "access_type": "online",
-        "prompt": "select_account",
-    }
-    url = f"{GOOGLE_CONFIG.get('auth_uri', 'https://accounts.google.com/o/oauth2/auth')}?{urllib.parse.urlencode(params)}"
-    return {"url": url}
 
-
-@app.get("/api/auth/google/callback")
-def google_callback(code: str):
-    if not GOOGLE_CONFIG:
-        return HTMLResponse(_redirect_html("/?error=google_unavailable"))
-    try:
-        res = http_requests.post(
-            GOOGLE_CONFIG.get("token_uri", "https://oauth2.googleapis.com/token"),
-            data={
-                "client_id": GOOGLE_CONFIG["client_id"],
-                "client_secret": GOOGLE_CONFIG["client_secret"],
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": REDIRECT_URI,
-            },
-        )
-        res.raise_for_status()
-        access_token = res.json()["access_token"]
-
-        user_res = http_requests.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        user_res.raise_for_status()
-        user_info = user_res.json()
-        g_name  = user_info.get("name",  "Google User").strip()
-        g_email = user_info.get("email", "")
-
-        conn = get_db_connection()
-        cursor = get_cursor(conn)
-        cursor.execute(
-            "SELECT id, Name FROM Customer WHERE Name = %s OR Contact_Info = %s",
-            (g_name, g_email),
-        )
-        row = cursor.fetchone()
-        if row:
-            user_id, username = row["id"], row["Name"]
-        else:
-            cursor.execute(
-                "INSERT INTO Customer (Name, Contact_Info) VALUES (%s, %s)",
-                (g_name, g_email),
-            )
-            user_id, username = cursor.lastrowid, g_name
-        conn.close()
-
-        token = create_session(user_id, username)
-        safe_username = username.replace("'", "\\'").replace('"', '\\"').replace("\n", "")
-        return HTMLResponse(content=f"""<!DOCTYPE html>
-<html><head><title>Signing in…</title>
-<style>
-  body{{background:#03040a;color:#f0f0f8;font-family:'DM Sans',sans-serif;
-  display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}}
-  .card{{text-align:center;}}
-  .spinner{{width:44px;height:44px;border:3px solid rgba(124,109,250,.2);
-  border-top-color:#7c6dfa;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 18px;}}
-  @keyframes spin{{to{{transform:rotate(360deg)}}}}
-  p{{color:#8b8b9e;font-size:14px;}}
-</style></head>
-<body><div class="card">
-  <div class="spinner"></div>
-  <p>Signing you in with Google…</p>
-</div>
-<script>
-  localStorage.setItem('auth_token', '{token}');
-  localStorage.setItem('username', '{safe_username}');
-  window.location.href = '/dashboard.html';
-</script></body></html>""")
-
-    except Exception as e:
-        error_msg = "google_code_used" if "400" in str(e) else "google_failed"
-        return HTMLResponse(content=_redirect_html(f"/?error={error_msg}"))
-
-
-def _redirect_html(url: str) -> str:
-    return f"""<!DOCTYPE html><html><head><title>Redirecting…</title></head>
-<body><script>window.location.href='{url}';</script></body></html>"""
 
 
 # ═══════════════════════════════════════════════════════════════
