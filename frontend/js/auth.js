@@ -118,20 +118,6 @@ async function handleRegister() {
   }
 }
 
-/* ── Google OAuth ───────────────────────────────────────────── */
-async function handleGoogleLogin() {
-  const btn = document.getElementById('google-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Redirecting…'; }
-  try {
-    const res = await fetch(`${API}/api/auth/google/url`);
-    if (!res.ok) throw new Error('unavailable');
-    const { url } = await res.json();
-    window.location.href = url;
-  } catch {
-    showAlert('login', 'Google sign-in is not configured. Use username/password instead.', 'warn');
-    if (btn) { btn.disabled = false; btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="20" height="20"> Sign in with Google'; }
-  }
-}
 
 /* ── Logout (used on inner pages) ───────────────────────────── */
 async function logout() {

@@ -5,9 +5,7 @@ import auth_handler
 # 1. PAGE CONFIGURATION
 st.set_page_config(page_title="Smart Retail Predictor", page_icon="🛒", layout="wide")
 
-# 2. INITIALIZE GOOGLE AUTH
-authenticator = auth_handler.setup_google_auth()
-auth_handler.check_google_login(authenticator)
+# 2. INITIALIZE GOOGLE AUTH (Disabled)
 
 # 3. PREMIUM THEME
 st.markdown("""
@@ -386,15 +384,4 @@ with st.container(border=True):
                         else:
                             st.warning(msg)
 
-        # Google divider
-        st.markdown("""
-            <div class="or-divider">
-                <div class="or-line"></div>
-                <span class="or-text">or continue with</span>
-                <div class="or-line"></div>
-            </div>
-        """, unsafe_allow_html=True)
-
-        pad_l, google_col, pad_r = st.columns([0.15, 3, 0.15])
-        with google_col:
-            auth_handler.render_google_button(authenticator)
+        # Google sign-in has been disabled

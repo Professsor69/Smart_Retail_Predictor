@@ -6,7 +6,6 @@
   <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript" />
   <img src="https://img.shields.io/badge/MySQL-4479A1.svg?style=for-the-badge&logo=MySQL&logoColor=white" alt="MySQL" />
   <img src="https://img.shields.io/badge/scikit--learn-F7931E.svg?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="Scikit-Learn" />
-  <img src="https://img.shields.io/badge/Google_OAuth-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google OAuth" />
 </div>
 
 <br>
@@ -31,7 +30,7 @@ The backbone of the application is a **Fully Normalized (3NF) MySQL Schema**. Th
 Recently migrated from a monolithic Streamlit architecture to a modern, decoupled client-server model:
 * **FastAPI Backend:** Provides robust, asynchronous RESTful API endpoints for data processing and machine learning integration.
 * **Custom Glassmorphism Frontend:** A highly responsive, premium dark-themed UI built with pure HTML, CSS, and vanilla JavaScript.
-* **Google OAuth Integration:** Secure, seamless authentication flow allowing users to sign in with their Google accounts or standard credentials.
+* **Secure Authentication:** Seamless username and password verification with secure tokens.
 
 ---
 
@@ -67,5 +66,5 @@ The custom web UI provides a unified command center for store managers:
 | **Backend API** | Python, FastAPI, Uvicorn |
 | **Database** | MySQL 8.0 |
 | **Machine Learning** | Scikit-learn, NumPy, Pandas |
-| **Authentication** | Google OAuth 2.0 |
+| **Authentication** | Secure Local Auth |
 | **Version Control** | Git, GitHub |
